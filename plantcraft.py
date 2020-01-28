@@ -18,6 +18,11 @@ TICKS_PER_SEC = 60
 
 SPEED = 15
 
+INIT_ENERGY = 500
+ENERGY = INIT_ENERGY
+ROOT_COST = 10
+ENERGY_REWARD = 100
+
 DEGREES= u'\N{DEGREE SIGN}'
 DIRECTIONS = (key.N, key.S, key.W, key.E, key.U, key.D)
 NUM_KEYS = (key._1, key._2, key._3, key._4, key._5, key._6, key._7, key._8, key._9, key._0)
@@ -48,7 +53,7 @@ def calcTextureCoords(which, n=8):
     left += 0.001
     return 6*[left, 0, right, 0, right, 1, left, 1]
 
-TEXTURES = (calcTextureCoords(1), calcTextureCoords(2), calcTextureCoords(3), calcTextureCoords(4))
+TEXTURES = (calcTextureCoords(1), calcTextureCoords(2), calcTextureCoords(3), calcTextureCoords(4), calcTextureCoords(5))
 #TEXTURES = (calcTextureCoords(1), calcTextureCoords(0), calcTextureCoords(0), calcTextureCoords(0))
 STALK_TEXTURE = calcTextureCoords(0)
 #TEXTURE_COLORS = (None, (255,128,128,255), (128,255,153,255), (128,153,255,255))
@@ -101,16 +106,31 @@ class RootSystem(object):
             self.add_block(self.tipPositions[i], TEXTURES[i])
 
         self.add_block((0,0,0), TEXTURES[0])
-        for i in range(1,6):
+        for i in range(1,60):
             self.add_block((0,i,0), STALK_TEXTURE)
 
+        for i in range(1,100):
+            self.add_block((random.randint(-20,20), random.randint(-20,0),random.randint(-20,20)), TEXTURES[4])
+
     def addToTip(self, whichTip, direction):
+        global ENERGY #KLUDGE. Replace with good design later
+        if (ENERGY <= ROOT_COST): return False
         oldTip = self.tipPositions[whichTip]
         newTip = RootSystem.modByDirection(oldTip, direction)
 
         # don't accept new positions that collide or are above ground
-        if newTip in self.world: return False
+        #print(newTip)
+        #if newTip in self.world:
+        #    print(self.world[newTip]==TEXTURES[4])
+        #    print(newTip in self.world)
+        #    print(newTip in self.world and self.world[newTip] == TEXTURES[4])
+        if newTip in self.world:
+            if self.world[newTip] == TEXTURES[4]:
+                ENERGY+=ENERGY_REWARD
+            else: return False
+        #if newTip in self.world: return False
         if newTip[1] > 0: return False
+        ENERGY -= ROOT_COST
 
         self.uncolorBlock(oldTip)
         
@@ -358,6 +378,13 @@ class Window(pyglet.window.Window):
 
         self.actionLabel = pyglet.text.Label(ACTION_TEXT+"1", font_name="Arial", font_size=18, x=self.width/2, 
                                              anchor_x="center", y=10, anchor_y="bottom", color=TEXTURE_COLORS[1])
+
+        self.controlsLabel = pyglet.text.Label(ACTION_TEXT+"1", font_name="Arial", font_size=18, x=self.width/4, 
+                                             anchor_x="center", y=10, anchor_y="bottom", color=(255,255,255,255))
+        self.controlsLabel.text = "nsewud"
+
+        self.energyLabel = pyglet.text.Label(ACTION_TEXT+"1", font_name="Arial", font_size=18, x=self.width/5, 
+                                             anchor_x="center", y=self.height-10, anchor_y="top", color=(255,0,0,255))
 
         # This call schedules the `update()` method to be called
         # TICKS_PER_SEC. This is the main game event loop.
@@ -614,6 +641,10 @@ class Window(pyglet.window.Window):
         self.positionLabel.draw()
 
         self.actionLabel.draw()
+        self.controlsLabel.draw()
+
+        self.energyLabel.text = "Energy remaining: %d" % (ENERGY)
+        self.energyLabel.draw()
 
 def setup_fog():
     """ Configure the OpenGL fog properties.
@@ -641,7 +672,7 @@ def setup():
     """
     # Set the color of "clear", i.e. the sky, in rgba.
     #glClearColor(0.5, 0.69, 1.0, 1)
-    glClearColor(0, 0, 0, 1)
+    glClearColor(0.5, 0.5, 0.5, 1)
     # Enable culling (not rendering) of back-facing facets -- facets that aren't
     # visible to you.
     glEnable(GL_CULL_FACE)
