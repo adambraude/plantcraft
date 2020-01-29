@@ -344,8 +344,8 @@ class Window(pyglet.window.Window):
 
         # Current (x, y, z) position in the world, specified with floats. Note
         # that, perhaps unlike in math class, the y-axis is the vertical axis.
-        #self.position = (0, 0, 10)
-        self.spherical = (0, 0, 10)
+        self.position = (0, 0, 10)
+        #self.spherical = (0, 0, 10)
 
         # First element is rotation of the player in the x-z plane (ground
         # plane) measured from the z-axis down. The second is the rotation
@@ -445,22 +445,27 @@ class Window(pyglet.window.Window):
         speed = SPEED
         d = dt * speed # distance covered this tick.
         #dx, dy, dz = self.get_motion_vector()
-        t, p, r = self.spherical
-        dt, dp, dr = [x * d for x in self.motion]
+        x, y, z = self.position
+        dx, dy, dz = [a * d for a in self.motion]
+        theta = math.radians(self.rotation[0])
+        x += dx*math.cos(theta) + -dz*math.sin(theta)
+        y += dy
+        z += dx*math.sin(theta) + dz*math.cos(theta)
+        self.position = (x, y, z)
 
         # speed up smaller circles--but not too fast
-        speedup = min(0.5, 1 / math.cos(math.radians(p)) / r)
+        #speedup = min(0.5, 1 / math.cos(math.radians(p)) / r)
 
-        t += (180 * dt / math.pi * speedup)
-        while t >= 360: t -= 360
-        while t < 0: t += 360 
-        p += (180 * dp / math.pi / r)
-        if p > 90: p = 90
-        if p < -90: p = -90
-        r += dr
-        if r < 1: r = 1
+        #t += (180 * dt / math.pi * speedup)
+        #while t >= 360: t -= 360
+        #while t < 0: t += 360 
+        #p += (180 * dp / math.pi / r)
+        #if p > 90: p = 90
+        #if p < -90: p = -90
+        #r += dr
+        #if r < 1: r = 1
 
-        self.spherical = (t, p, r)
+        
 
 #    def on_mouse_press(self, x, y, button, modifiers):
 #        """ Called when a mouse button is pressed. See pyglet docs for button
@@ -494,24 +499,24 @@ class Window(pyglet.window.Window):
 #        else:
 #            self.set_exclusive_mouse(True)
 
-#    def on_mouse_motion(self, x, y, dx, dy):
-#        """ Called when the player moves the mouse.
-#
-#        Parameters
-#        ----------
-#        x, y : int
-#            The coordinates of the mouse click. Always center of the screen if
-#            the mouse is captured.
-#        dx, dy : float
-#            The movement of the mouse.
-#
-#        """
-#        if self.exclusive:
-#            m = 0.15
-#            x, y = self.rotation
-#            x, y = x + dx * m, y + dy * m
-#            y = max(-90, min(90, y))
-#            self.rotation = (x, y)
+    def on_mouse_motion(self, x, y, dx, dy):
+        """ Called when the player moves the mouse.
+
+        Parameters
+        ----------
+        x, y : int
+            The coordinates of the mouse click. Always center of the screen if
+            the mouse is captured.
+        dx, dy : float
+            The movement of the mouse.
+
+        """
+        if self.exclusive:
+            m = 0.15
+            x, y = self.rotation
+            x, y = x + dx * m, y + dy * m
+            y = max(-90, min(90, y))
+            self.rotation = (x, y)
 
     def on_key_press(self, symbol, modifiers):
         """ Called when the player presses a key. See pyglet docs for key
@@ -526,17 +531,17 @@ class Window(pyglet.window.Window):
 
         """
 
-        if symbol == key.LEFT:
+        if symbol == key.LEFT or symbol== key.A:
             self.motion[0] -= 1
-        elif symbol == key.RIGHT:
+        elif symbol == key.RIGHT or symbol == key.D:
             self.motion[0] += 1
-        elif symbol == key.UP:
+        elif symbol == key.SPACE:
             self.motion[1] += 1
-        elif symbol == key.DOWN:
+        elif symbol == key.LSHIFT:
             self.motion[1] -= 1
-        elif symbol == key.PAGEUP:
+        elif symbol == key.UP or symbol == key.W:
             self.motion[2] -= 1
-        elif symbol == key.PAGEDOWN:
+        elif symbol == key.DOWN or symbol == key.S:
             self.motion[2] += 1
         elif symbol == key.ESCAPE:
             self.set_exclusive_mouse(False)
@@ -560,17 +565,17 @@ class Window(pyglet.window.Window):
             Number representing any modifying keys that were pressed.
 
         """
-        if symbol == key.LEFT:
+        if symbol == key.LEFT or symbol== key.A:
             self.motion[0] += 1
-        elif symbol == key.RIGHT:
+        elif symbol == key.RIGHT or symbol == key.D:
             self.motion[0] -= 1
-        elif symbol == key.UP:
+        elif symbol == key.SPACE:
             self.motion[1] -= 1
-        elif symbol == key.DOWN:
+        elif symbol == key.LSHIFT:
             self.motion[1] += 1
-        elif symbol == key.PAGEUP:
+        elif symbol == key.UP or symbol == key.W:
             self.motion[2] += 1
-        elif symbol == key.PAGEDOWN:
+        elif symbol == key.DOWN or symbol == key.S:
             self.motion[2] -= 1
 
     def on_resize(self, width, height):
@@ -610,9 +615,14 @@ class Window(pyglet.window.Window):
         glLoadIdentity()
 
         # remember OpenGL is backwards!
-        glTranslatef(0, 0, -self.spherical[2])
-        glRotatef(self.spherical[1], 1, 0, 0)
-        glRotatef(-self.spherical[0], 0, 1, 0)
+        x, y = self.rotation
+        glRotatef(x, 0, 1, 0)
+        glRotatef(-y, math.cos(math.radians(x)), 0, math.sin(math.radians(x)))
+        x,y,z = self.position
+        glTranslatef(-x, -y, -z)
+        
+        #glRotatef(self.spherical[1], 1, 0, 0)
+        #glRotatef(-self.spherical[0], 0, 1, 0)
 
     def on_draw(self):
         """ Called by pyglet to draw the canvas.
@@ -637,7 +647,7 @@ class Window(pyglet.window.Window):
         #self.rLabel.text = "%.2f, %.2f" % (self.rotation[0], self.rotation[1])
         #self.rLabel.draw()
 
-        self.positionLabel.text = "(%d%s, %d%s, %.1f)" % (self.spherical[0], DEGREES, self.spherical[1], DEGREES, self.spherical[2])
+        self.positionLabel.text = "(%d,%d,%d,%d%s,%d%s)" % (self.position[0], self.position[1], self.position[2], self.rotation[0], DEGREES, self.rotation[1], DEGREES)
         self.positionLabel.draw()
 
         self.actionLabel.draw()
@@ -689,7 +699,7 @@ def setup():
 def main():
     window = Window(width=800, height=600, caption='PlantCraft', resizable=True)
     # Hide the mouse cursor and prevent the mouse from leaving the window.
-    #window.set_exclusive_mouse(True)
+    window.set_exclusive_mouse(True)
     setup()
     pyglet.app.run()
 
