@@ -21,6 +21,7 @@ SPEED = 15
 INIT_ENERGY = 500
 ENERGY = INIT_ENERGY
 ROOT_COST = 10
+FORK_COST = 50
 ENERGY_REWARD = 100
 
 DEGREES= u'\N{DEGREE SIGN}'
@@ -129,9 +130,10 @@ class RootSystem(object):
         for i in range(1,100):
             self.add_block((random.randint(-20,20), random.randint(-20,0),random.randint(-20,20)), TEXTURES[4])
 
-    def addToTip(self, oldTip, newTip):
+    def addToTip(self, oldTip, newTip, fork=False):
         global ENERGY #KLUDGE. Replace with good design later
         if (ENERGY < ROOT_COST): return False
+        if (fork and ENERGY < ROOT_COST): return False
         #oldTip = self.tipPositions[whichTip]
         #newTip = RootSystem.modByDirection(oldTip, direction)
 
@@ -147,9 +149,11 @@ class RootSystem(object):
             else: return False
         #if newTip in self.world: return False
         if newTip[1] > 0: return False
-        ENERGY -= ROOT_COST
+        
+        if (fork): ENERGY -= FORK_COST
+        else: ENERGY -= ROOT_COST
 
-        self.uncolorBlock(oldTip)
+        if (not fork): self.uncolorBlock(oldTip)
         
         self.add_block(newTip, TEXTURES[2])
         #self.tipPositions[whichTip] = newTip
@@ -342,7 +346,7 @@ class RootSystem(object):
         while self.queue:
             self._dequeue()
 
-    def hit_test(self, position, vector, max_distance=8):
+    def hit_test(self, position, vector, max_distance=8, ignore=[]):
         """ Line of sight search from current position. If a block is
         intersected it is returned, along with the block previously in the line
         of sight. If no block is found, return None, None.
@@ -363,7 +367,7 @@ class RootSystem(object):
         previous = None
         for _ in xrange(max_distance * m):
             key = normalize((x, y, z))
-            if key != previous and key in self.world and previous:
+            if key != previous and ((key in self.world) and (self.world[key] not in ignore)) and previous:
                 if abs(key[0]-previous[0])+abs(key[1]-previous[1])+abs(key[2]-previous[2])>1:
                     previous = (previous[0], key[1], previous[2])
                     if abs(key[0]-previous[0]) + abs(key[2]-previous[2])>1:
@@ -430,7 +434,7 @@ class Window(pyglet.window.Window):
 
         self.controlsLabel = pyglet.text.Label(ACTION_TEXT+"1", font_name="Arial", font_size=18, x=self.width/4, 
                                              anchor_x="center", y=10, anchor_y="bottom", color=(255,255,255,255))
-        self.controlsLabel.text = "nsewud"
+        self.controlsLabel.text = "l-grow r-fork"
 
         self.energyLabel = pyglet.text.Label(ACTION_TEXT+"1", font_name="Arial", font_size=18, x=self.width/5, 
                                              anchor_x="center", y=self.height-10, anchor_y="top", color=(255,0,0,255))
@@ -535,13 +539,13 @@ class Window(pyglet.window.Window):
         """
         if self.exclusive:
             vector = self.get_sight_vector()
-            block, previous = self.rootSystem.hit_test(self.position, vector)
+            block, previous = self.rootSystem.hit_test(self.position, vector, 8, [TEXTURES[4]])
             if block and (self.rootSystem.world[block] == TEXTURES[2]):
                 if (button == mouse.RIGHT) or \
                         ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
                     # ON OSX, control + left click = right click.
                     if previous:
-                        pass #right click for fork?
+                        self.rootSystem.addToTip(block, previous,True)
                 elif button == pyglet.window.mouse.LEFT and block and previous:
                     self.rootSystem.addToTip(block, previous)
         else:
@@ -686,7 +690,7 @@ class Window(pyglet.window.Window):
 
         """
         vector = self.get_sight_vector()
-        block, previous = self.rootSystem.hit_test(self.position, vector)
+        block, previous = self.rootSystem.hit_test(self.position, vector, 8, [TEXTURES[4]])
         if block and (self.rootSystem.world[block] == TEXTURES[2]):
             x, y, z = previous
             vertex_data = cube_vertices(x, y, z, 0.51)
