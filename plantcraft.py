@@ -13,13 +13,9 @@ from pyglet.window import key, mouse
 
 TICKS_PER_SEC = 60
 
-# Size of sectors used to ease block loading.
-#SECTOR_SIZE = 16
-
 SPEED = 15
 
 INIT_ENERGY = 500
-ENERGY = INIT_ENERGY
 ROOT_COST = 10
 FORK_COST = 50
 ENERGY_REWARD = 100
@@ -72,11 +68,8 @@ def calcTextureCoords(which, n=8):
     return 6*[left, 0, right, 0, right, 1, left, 1]
 
 TEXTURES = (calcTextureCoords(1), calcTextureCoords(2), calcTextureCoords(3), calcTextureCoords(4), calcTextureCoords(5))
-#TEXTURES = (calcTextureCoords(1), calcTextureCoords(0), calcTextureCoords(0), calcTextureCoords(0))
 STALK_TEXTURE = calcTextureCoords(0)
-#TEXTURE_COLORS = (None, (255,128,128,255), (128,255,153,255), (128,153,255,255))
 TEXTURE_COLORS = (None, (128,255,255,255), (128,180,255,255), (204, 128, 255, 255))
-ACTION_TEXT = "Adding to root tip "
 
 FACES = [( 0, 1, 0), ( 0,-1, 0), (-1, 0, 0), ( 1, 0, 0), ( 0, 0, 1), ( 0, 0,-1),]
 
@@ -85,6 +78,7 @@ class RootSystem(object):
 
     def __init__(self):
 
+        self.energy = INIT_ENERGY
         # A Batch is a collection of vertex lists for batched rendering.
         self.batch = pyglet.graphics.Batch()
 
@@ -115,43 +109,32 @@ class RootSystem(object):
         """ Initialize the world by placing all the blocks.
 
         """
-        #n = 80  # 1/2 width and height of world
-        #s = 1  # step size
-        #y = 0  # initial y height
 
         self.tipPositions = [None, (-1,0,0), (1,0,0), (0,-1,0)]
         for i in range(1,len(self.tipPositions)):
             self.add_block(self.tipPositions[i], TEXTURES[2])
 
         self.add_block((0,0,0), TEXTURES[0])
-        for i in range(1,60):
+        for i in range(1,6):
             self.add_block((0,i,0), STALK_TEXTURE)
 
         for i in range(1,100):
             self.add_block((random.randint(-20,20), random.randint(-20,0),random.randint(-20,20)), TEXTURES[4])
 
     def addToTip(self, oldTip, newTip, fork=False):
-        global ENERGY #KLUDGE. Replace with good design later
-        if (ENERGY < ROOT_COST): return False
-        if (fork and ENERGY < ROOT_COST): return False
-        #oldTip = self.tipPositions[whichTip]
-        #newTip = RootSystem.modByDirection(oldTip, direction)
+        if (self.energy < ROOT_COST): return False
+        if (fork and self.energy < FORK_COST): return False
 
         # don't accept new positions that collide or are above ground
-        #print(newTip)
-        #if newTip in self.world:
-        #    print(self.world[newTip]==TEXTURES[4])
-        #    print(newTip in self.world)
-        #    print(newTip in self.world and self.world[newTip] == TEXTURES[4])
         if newTip in self.world:
             if self.world[newTip] == TEXTURES[4]:
-                ENERGY+=ENERGY_REWARD
+                self.energy+=ENERGY_REWARD
             else: return False
         #if newTip in self.world: return False
         if newTip[1] > 0: return False
         
-        if (fork): ENERGY -= FORK_COST
-        else: ENERGY -= ROOT_COST
+        if (fork): self.energy -= FORK_COST
+        else: self.energy -= ROOT_COST
 
         if (not fork): self.uncolorBlock(oldTip)
         
@@ -397,7 +380,6 @@ class Window(pyglet.window.Window):
         # Current (x, y, z) position in the world, specified with floats. Note
         # that, perhaps unlike in math class, the y-axis is the vertical axis.
         self.position = (0, 0, 10)
-        #self.spherical = (0, 0, 10)
 
         # First element is rotation of the player in the x-z plane (ground
         # plane) measured from the z-axis down. The second is the rotation
@@ -408,19 +390,8 @@ class Window(pyglet.window.Window):
         self.rotation = (0, 0)
         self.reticle = None
 
-        # Which sector the player is currently in.
-        #self.sector = None
-
         # Velocity in the y (upward) direction.
         self.dy = 0
-
-        # A list of blocks the player can place. Hit num keys to cycle.
-        #self.inventory = [TIP2, BAREROOT, TIP1]
-
-        # The current block the user can place. Hit num keys to cycle.
-        #self.block = self.inventory[0]
-
-        self.currentTip = 1
 
         # Instance of the model that handles the world.
         self.rootSystem = RootSystem()
@@ -429,14 +400,11 @@ class Window(pyglet.window.Window):
                                         anchor_x='center', y=self.height-10, anchor_y='top', 
                                         color=(255,255,255,255))
 
-        self.actionLabel = pyglet.text.Label(ACTION_TEXT+"1", font_name="Arial", font_size=18, x=self.width/2, 
-                                             anchor_x="center", y=10, anchor_y="bottom", color=TEXTURE_COLORS[1])
-
-        self.controlsLabel = pyglet.text.Label(ACTION_TEXT+"1", font_name="Arial", font_size=18, x=self.width/4, 
+        self.controlsLabel = pyglet.text.Label("", font_name="Arial", font_size=18, x=self.width/4, 
                                              anchor_x="center", y=10, anchor_y="bottom", color=(255,255,255,255))
         self.controlsLabel.text = "l-grow r-fork"
 
-        self.energyLabel = pyglet.text.Label(ACTION_TEXT+"1", font_name="Arial", font_size=18, x=self.width/5, 
+        self.energyLabel = pyglet.text.Label("", font_name="Arial", font_size=18, x=self.width/5, 
                                              anchor_x="center", y=self.height-10, anchor_y="top", color=(255,0,0,255))
 
         # This call schedules the `update()` method to be called
@@ -497,7 +465,6 @@ class Window(pyglet.window.Window):
         """
         speed = SPEED
         d = dt * speed # distance covered this tick.
-        #dx, dy, dz = self.get_motion_vector()
         x, y, z = self.position
         dx, dy, dz = [a * d for a in self.motion]
         theta = math.radians(self.rotation[0])
@@ -505,18 +472,6 @@ class Window(pyglet.window.Window):
         y += dy
         z += dx*math.sin(theta) + dz*math.cos(theta)
         self.position = (x, y, z)
-
-        # speed up smaller circles--but not too fast
-        #speedup = min(0.5, 1 / math.cos(math.radians(p)) / r)
-
-        #t += (180 * dt / math.pi * speedup)
-        #while t >= 360: t -= 360
-        #while t < 0: t += 360 
-        #p += (180 * dp / math.pi / r)
-        #if p > 90: p = 90
-        #if p < -90: p = -90
-        #r += dr
-        #if r < 1: r = 1
 
         
 
@@ -597,13 +552,6 @@ class Window(pyglet.window.Window):
             self.motion[2] += 1
         elif symbol == key.ESCAPE:
             self.set_exclusive_mouse(False)
-        elif symbol in NUM_KEYS:
-            self.currentTip = (symbol - NUM_KEYS[0]) % (len(TEXTURES) - 1) + 1
-            self.actionLabel.text = ACTION_TEXT + str(self.currentTip)
-            self.actionLabel.color = TEXTURE_COLORS[self.currentTip]
-            #self.block = self.inventory[index]
-        #elif symbol in DIRECTIONS:
-        #    self.rootSystem.addToTip(self.currentTip, symbol)
 
     def on_key_release(self, symbol, modifiers):
         """ Called when the player releases a key. See pyglet docs for key
@@ -635,7 +583,7 @@ class Window(pyglet.window.Window):
 
         """
         # adjust labels
-        self.positionLabel.x = self.actionLabel.x = width/2
+        self.positionLabel.x = width/2
         self.positionLabel.y = height-10
         #reticle
         if self.reticle:
@@ -680,9 +628,6 @@ class Window(pyglet.window.Window):
         glRotatef(-y, math.cos(math.radians(x)), 0, math.sin(math.radians(x)))
         x,y,z = self.position
         glTranslatef(-x, -y, -z)
-        
-        #glRotatef(self.spherical[1], 1, 0, 0)
-        #glRotatef(-self.spherical[0], 0, 1, 0)
 
     def draw_focused_block(self):
         """ Draw black edges around the block that is currently under the
@@ -720,23 +665,15 @@ class Window(pyglet.window.Window):
         self.reticle.draw(GL_LINES)
 
     def draw_labels(self):
-        """ Draw the label in the top left of the screen.
+        """ Draw all the random text around the screen
 
         """
-        #x, y, z = self.position
-        #self.label.text = '%02d (%.2f, %.2f, %.2f) %d / %d' % (pyglet.clock.get_fps(), x, y, z, len(self.rootSystem._shown), len(self.rootSystem.world))
-        #self.label.draw()
-
-        #self.rLabel.text = "%.2f, %.2f" % (self.rotation[0], self.rotation[1])
-        #self.rLabel.draw()
-
         self.positionLabel.text = "(%d,%d,%d,%d%s,%d%s)" % (self.position[0], self.position[1], self.position[2], self.rotation[0], DEGREES, self.rotation[1], DEGREES)
         self.positionLabel.draw()
 
-        self.actionLabel.draw()
         self.controlsLabel.draw()
 
-        self.energyLabel.text = "Energy remaining: %d" % (ENERGY)
+        self.energyLabel.text = "Energy remaining: %d" % (self.rootSystem.energy)
         self.energyLabel.draw()
 
 def setup_fog():
