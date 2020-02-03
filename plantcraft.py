@@ -336,10 +336,12 @@ class RootSystem(object):
         self.world = world
         
         self.energy = INIT_ENERGY
+        self.tipTex = TEXTURES[2]
 
         # A mapping from position to the texture of the block at that position.
         # This defines all the blocks that are currently in the world.
         self.blocks = {}
+        self.tips = {}
 
         self._initialize(position)
 
@@ -351,7 +353,7 @@ class RootSystem(object):
         x,y,z = position
         self.tipPositions = [None, (x-1,y,z), (x+1,y,z), (x,y-1,z)]
         for i in range(1,len(self.tipPositions)):
-            self.add_block(self.tipPositions[i], TEXTURES[2])
+            self.add_block(self.tipPositions[i], self.tipTex)
 
         self.add_block((x,y,z), TEXTURES[0])
         for i in range(1,6):
@@ -372,9 +374,11 @@ class RootSystem(object):
         if (fork): self.energy -= FORK_COST
         else: self.energy -= ROOT_COST
 
-        if (not fork): self.world.uncolorBlock(oldTip)
+        if (not fork):
+            self.world.uncolorBlock(oldTip)
+            del self.tips[oldTip]
         
-        self.add_block(newTip, TEXTURES[2])
+        self.add_block(newTip, self.tipTex)
         #self.tipPositions[whichTip] = newTip
             #print(str(oldTip) +" -> " + str(newTip))
         return True
@@ -394,7 +398,17 @@ class RootSystem(object):
 
         """
         self.blocks[position] = True
+        if texture==self.tipTex: self.tips[position] = True
         self.world.add_block(position, texture, immediate)
+
+    def legalMoves(self):
+        moves = []
+        for tip in self.tips.keys():
+            x,y,z = tip
+            for dx, dy, dz in FACES:
+                if (((x + dx, y + dy, z + dz) not in self.world.world) or (self.world.world[(x + dx, y + dy, z + dz)]==TEXTURES[4])) and y+dy<=0:
+                    moves.append(((x,y,z),(x+dx,y+dy,z+dz)))
+        return moves
             
     def remove_block(self, position, immediate=True):
         """ Remove the block at the given `position`.
@@ -450,11 +464,14 @@ class Player(object):
     def takeTurn(self):
         pass
 
-    def endTurn(self):
-        self.window.nextTurn()
-
 class HumanPlayer(Player):
     pass
+
+class RandomPlayer(Player):
+    def takeTurn(self):
+        moves = self.rootSystem.legalMoves()
+        move = random.choice(moves)
+        self.rootSystem.addToTip(move[0],move[1])
 
 class Window(pyglet.window.Window):
 
@@ -497,7 +514,7 @@ class Window(pyglet.window.Window):
 
         self.players = []
         self.players.append(HumanPlayer(self.rootSystems[0], self))
-        self.players.append(HumanPlayer(self.rootSystems[1], self))
+        self.players.append(RandomPlayer(self.rootSystems[1], self))
 
         self.currentPlayerIndex = 0
 
@@ -515,6 +532,7 @@ class Window(pyglet.window.Window):
         # This call schedules the `update()` method to be called
         # TICKS_PER_SEC. This is the main game event loop.
         pyglet.clock.schedule_interval(self.update, 1.0 / TICKS_PER_SEC)
+        self.currentPlayer().takeTurn()
 
     def nextTurn(self):
         self.currentPlayerIndex += 1
@@ -566,6 +584,8 @@ class Window(pyglet.window.Window):
         dt = min(dt, 0.2)
         for _ in xrange(m):
             self._update(dt / m)
+        if (not isinstance(self.currentPlayer(), HumanPlayer)):
+            self.nextTurn()
 
     def _update(self, dt):
         """ Private implementation of the `update()` method. This is where most
@@ -615,10 +635,10 @@ class Window(pyglet.window.Window):
                     # ON OSX, control + left click = right click.
                     if previous:
                         self.rootSystems[self.currentPlayerIndex].addToTip(block, previous,True)
-                        self.currentPlayer().endTurn()
+                        self.nextTurn()
                 elif button == pyglet.window.mouse.LEFT and block and previous:
                     self.rootSystems[self.currentPlayerIndex].addToTip(block, previous)
-                    self.currentPlayer().endTurn()
+                    self.nextTurn()
         else:
             self.set_exclusive_mouse(True)
 
