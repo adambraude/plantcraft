@@ -74,11 +74,10 @@ TEXTURE_COLORS = (None, (128,255,255,255), (128,180,255,255), (204, 128, 255, 25
 FACES = [( 0, 1, 0), ( 0,-1, 0), (-1, 0, 0), ( 1, 0, 0), ( 0, 0, 1), ( 0, 0,-1),]
 
 
-class RootSystem(object):
+class World(object):
 
     def __init__(self):
 
-        self.energy = INIT_ENERGY
         # A Batch is a collection of vertex lists for batched rendering.
         self.batch = pyglet.graphics.Batch()
 
@@ -110,38 +109,8 @@ class RootSystem(object):
 
         """
 
-        self.tipPositions = [None, (-1,0,0), (1,0,0), (0,-1,0)]
-        for i in range(1,len(self.tipPositions)):
-            self.add_block(self.tipPositions[i], TEXTURES[2])
-
-        self.add_block((0,0,0), TEXTURES[0])
-        for i in range(1,6):
-            self.add_block((0,i,0), STALK_TEXTURE)
-
         for i in range(1,100):
             self.add_block((random.randint(-20,20), random.randint(-20,0),random.randint(-20,20)), TEXTURES[4])
-
-    def addToTip(self, oldTip, newTip, fork=False):
-        if (self.energy < ROOT_COST): return False
-        if (fork and self.energy < FORK_COST): return False
-
-        # don't accept new positions that collide or are above ground
-        if newTip in self.world:
-            if self.world[newTip] == TEXTURES[4]:
-                self.energy+=ENERGY_REWARD
-            else: return False
-        #if newTip in self.world: return False
-        if newTip[1] > 0: return False
-        
-        if (fork): self.energy -= FORK_COST
-        else: self.energy -= ROOT_COST
-
-        if (not fork): self.uncolorBlock(oldTip)
-        
-        self.add_block(newTip, TEXTURES[2])
-        #self.tipPositions[whichTip] = newTip
-            #print(str(oldTip) +" -> " + str(newTip))
-        return True
 
     @staticmethod
     def modByDirection(start, direc):
@@ -360,6 +329,132 @@ class RootSystem(object):
             x, y, z = x + dx / m, y + dy / m, z + dz / m
         return None, None
 
+class RootSystem(object):
+
+    def __init__(self, world, position):
+
+        self.world = world
+        
+        self.energy = INIT_ENERGY
+
+        # A mapping from position to the texture of the block at that position.
+        # This defines all the blocks that are currently in the world.
+        self.blocks = {}
+
+        self._initialize(position)
+
+
+    def _initialize(self, position):
+        """ Initialize the world by placing all the blocks.
+
+        """
+        x,y,z = position
+        self.tipPositions = [None, (x-1,y,z), (x+1,y,z), (x,y-1,z)]
+        for i in range(1,len(self.tipPositions)):
+            self.add_block(self.tipPositions[i], TEXTURES[2])
+
+        self.add_block((x,y,z), TEXTURES[0])
+        for i in range(1,6):
+            self.add_block((x,y+i,z), STALK_TEXTURE)
+
+    def addToTip(self, oldTip, newTip, fork=False):
+        if (self.energy < ROOT_COST): return False
+        if (fork and self.energy < FORK_COST): return False
+
+        # don't accept new positions that collide or are above ground
+        if newTip in self.world.world:
+            if self.world.world[newTip] == TEXTURES[4]:
+                self.energy+=ENERGY_REWARD
+            else: return False
+        #if newTip in self.world: return False
+        if newTip[1] > 0: return False
+        
+        if (fork): self.energy -= FORK_COST
+        else: self.energy -= ROOT_COST
+
+        if (not fork): self.world.uncolorBlock(oldTip)
+        
+        self.add_block(newTip, TEXTURES[2])
+        #self.tipPositions[whichTip] = newTip
+            #print(str(oldTip) +" -> " + str(newTip))
+        return True
+
+    def add_block(self, position, texture, immediate=True):
+        """ Add a block with the given `texture` and `position` to the world.
+
+        Parameters
+        ----------
+        position : tuple of len 3
+            The (x, y, z) position of the block to add.
+        texture : list of len 3
+            The coordinates of the texture squares. Use `tex_coords()` to
+            generate.
+        immediate : bool
+            Whether or not to draw the block immediately.
+
+        """
+        self.blocks[position] = True
+        self.world.add_block(position, texture, immediate)
+            
+    def remove_block(self, position, immediate=True):
+        """ Remove the block at the given `position`.
+
+        Parameters
+        ----------
+        position : tuple of len 3
+            The (x, y, z) position of the block to remove.
+        immediate : bool
+            Whether or not to immediately remove block from canvas.
+
+        """
+        del self.blocks[position]
+        self.world.add_block(position,texture,immediate)
+
+    def hit_test(self, position, vector, max_distance=8, ignore=[]):
+        """ Line of sight search from current position. If a block is
+        intersected it is returned, along with the block previously in the line
+        of sight. If no block is found, return None, None.
+
+        Parameters
+        ----------
+s        position : tuple of len 3
+            The (x, y, z) position to check visibility from.
+        vector : tuple of len 3
+            The line of sight vector.
+        max_distance : int
+            How many blocks away to search for a hit.
+
+        """
+        m = 8
+        x, y, z = position
+        dx, dy, dz = vector
+        previous = None
+        for _ in xrange(max_distance * m):
+            key = normalize((x, y, z))
+            if key != previous and ((key in self.blocks)and (key in self.world.world)and (self.world.world[key] not in ignore)) and previous:
+                if abs(key[0]-previous[0])+abs(key[1]-previous[1])+abs(key[2]-previous[2])>1:
+                    previous = (previous[0], key[1], previous[2])
+                    if abs(key[0]-previous[0]) + abs(key[2]-previous[2])>1:
+                        previous=(key[0], previous[1], previous[2])
+                return key, previous
+            previous = key
+            x, y, z = x + dx / m, y + dy / m, z + dz / m
+        return None, None
+
+class Player(object):
+
+    def __init__(self, rootSystem, window):
+        self.rootSystem = rootSystem
+        self.window = window
+
+    def takeTurn(self):
+        pass
+
+    def endTurn(self):
+        self.window.nextTurn()
+
+class HumanPlayer(Player):
+    pass
 
 class Window(pyglet.window.Window):
 
@@ -394,7 +489,17 @@ class Window(pyglet.window.Window):
         self.dy = 0
 
         # Instance of the model that handles the world.
-        self.rootSystem = RootSystem()
+        self.world = World()
+
+        self.rootSystems = []
+        for i in range(2):
+            self.rootSystems.append(RootSystem(self.world, (10*i,0,0) ))
+
+        self.players = []
+        self.players.append(HumanPlayer(self.rootSystems[0], self))
+        self.players.append(HumanPlayer(self.rootSystems[1], self))
+
+        self.currentPlayerIndex = 0
 
         self.positionLabel = pyglet.text.Label('', font_name="Arial", font_size=18, x=self.width/2, 
                                         anchor_x='center', y=self.height-10, anchor_y='top', 
@@ -410,6 +515,15 @@ class Window(pyglet.window.Window):
         # This call schedules the `update()` method to be called
         # TICKS_PER_SEC. This is the main game event loop.
         pyglet.clock.schedule_interval(self.update, 1.0 / TICKS_PER_SEC)
+
+    def nextTurn(self):
+        self.currentPlayerIndex += 1
+        if self.currentPlayerIndex >= len(self.players):
+            self.currentPlayerIndex = 0
+        self.players[self.currentPlayerIndex].takeTurn()
+
+    def currentPlayer(self):
+        return self.players[self.currentPlayerIndex]
 
     def set_exclusive_mouse(self, exclusive):
         """ If `exclusive` is True, the game will capture the mouse, if False
@@ -447,7 +561,7 @@ class Window(pyglet.window.Window):
 
         """
         #self.rootSystem.process_queue()
-        self.rootSystem.process_entire_queue()
+        self.world.process_entire_queue()
         m = 8
         dt = min(dt, 0.2)
         for _ in xrange(m):
@@ -492,17 +606,19 @@ class Window(pyglet.window.Window):
             mouse button was clicked.
 
         """
-        if self.exclusive:
+        if self.exclusive and isinstance(self.currentPlayer(), HumanPlayer):
             vector = self.get_sight_vector()
-            block, previous = self.rootSystem.hit_test(self.position, vector, 8, [TEXTURES[4]])
-            if block and (self.rootSystem.world[block] == TEXTURES[2]):
+            block, previous = self.rootSystems[self.currentPlayerIndex].hit_test(self.position, vector, 8, [TEXTURES[4]])
+            if block and (self.world.world[block] == TEXTURES[2]):
                 if (button == mouse.RIGHT) or \
                         ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
                     # ON OSX, control + left click = right click.
                     if previous:
-                        self.rootSystem.addToTip(block, previous,True)
+                        self.rootSystems[self.currentPlayerIndex].addToTip(block, previous,True)
+                        self.currentPlayer().endTurn()
                 elif button == pyglet.window.mouse.LEFT and block and previous:
-                    self.rootSystem.addToTip(block, previous)
+                    self.rootSystems[self.currentPlayerIndex].addToTip(block, previous)
+                    self.currentPlayer().endTurn()
         else:
             self.set_exclusive_mouse(True)
 
@@ -635,8 +751,8 @@ class Window(pyglet.window.Window):
 
         """
         vector = self.get_sight_vector()
-        block, previous = self.rootSystem.hit_test(self.position, vector, 8, [TEXTURES[4]])
-        if block and (self.rootSystem.world[block] == TEXTURES[2]):
+        block, previous = self.rootSystems[self.currentPlayerIndex].hit_test(self.position, vector, 8, [TEXTURES[4]])
+        if block and (self.world.world[block] == TEXTURES[2]):
             x, y, z = previous
             vertex_data = cube_vertices(x, y, z, 0.51)
             glColor3d(0, 0, 0)
@@ -651,8 +767,8 @@ class Window(pyglet.window.Window):
         self.clear()
         self.set_3d()
         glColor3d(1, 1, 1)
-        self.rootSystem.batch.draw()
-        self.draw_focused_block()
+        self.world.batch.draw()
+        if isinstance(self.currentPlayer(), HumanPlayer): self.draw_focused_block()
         self.set_2d()
         self.draw_labels()
         self.draw_reticle()
@@ -673,7 +789,7 @@ class Window(pyglet.window.Window):
 
         self.controlsLabel.draw()
 
-        self.energyLabel.text = "Energy remaining: %d" % (self.rootSystem.energy)
+        self.energyLabel.text = "Energy remaining: %d" % (self.rootSystems[self.currentPlayerIndex].energy)
         self.energyLabel.draw()
 
 def setup_fog():
