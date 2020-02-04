@@ -124,39 +124,6 @@ class World(object):
             for i in range(1, len(self.tipPositions)):
                 self.proxUpdate(self.tipPositions[i], self.tipPositions[i])
 
-<<<<<<< HEAD
-    def addToTip(self, whichTip, direction):
-        global ENERGY #KLUDGE. Replace with good design later
-        if (ENERGY <= ROOT_COST): return False
-        oldTip = self.tipPositions[whichTip]
-        newTip = RootSystem.modByDirection(oldTip, direction)
-
-        # don't accept new positions that collide or are above ground
-        #print(newTip)
-        #if newTip in self.world:
-        #    print(self.world[newTip]==TEXTURES[4])
-        #    print(newTip in self.world)
-        #    print(newTip in self.world and self.world[newTip] == TEXTURES[4])
-        if newTip in self.world:
-            if self.world[newTip] == TEXTURES[4]:
-                ENERGY+=ENERGY_REWARD
-                #.hide_block(newTip)
-                self.uncolorBlock(newTip)
-                self.remove_block(newTip)
-            else: return False
-        #if newTip in self.world: return False
-        if newTip[1] > 0: return False
-        ENERGY -= ROOT_COST
-
-        self.uncolorBlock(oldTip)
-
-        self.add_block(newTip, TEXTURES[whichTip])
-        self.tipPositions[whichTip] = newTip
-            #print(str(oldTip) +" -> " + str(newTip))
-        if PROX:
-            self.proxUpdate(newTip, oldTip)
-        return True
-
     def proxUpdate(self, position, old_position):
         x, y, z = position
         x_old, y_old, z_old = old_position
@@ -186,8 +153,6 @@ class World(object):
                     if new_pos in self.world and self.world[new_pos] == TEXTURES[4]:
                         self.show_block(new_pos)
 
-=======
->>>>>>> 07a79a827791f2cfe4e14f0fe196a101be9a5957
     @staticmethod
     def modByDirection(start, direc):
         if direc==key.N or direc=='n' or direc=='N': return (start[0], start[1], start[2]-1)
@@ -410,7 +375,7 @@ class RootSystem(object):
     def __init__(self, world, position):
 
         self.world = world
-        
+
         self.energy = INIT_ENERGY
         self.tipTex = TEXTURES[2]
 
@@ -444,19 +409,21 @@ class RootSystem(object):
             if self.world.world[newTip] == TEXTURES[4]:
                 self.energy+=ENERGY_REWARD
             else: return False
-        #if newTip in self.world: return False
+
         if newTip[1] > 0: return False
-        
+
         if (fork): self.energy -= FORK_COST
         else: self.energy -= ROOT_COST
 
         if (not fork):
             self.world.uncolorBlock(oldTip)
             del self.tips[oldTip]
-        
+
         self.add_block(newTip, self.tipTex)
         #self.tipPositions[whichTip] = newTip
             #print(str(oldTip) +" -> " + str(newTip))
+        if PROX:
+            self.proxUpdate(newTip,oldTip)
         return True
 
     def add_block(self, position, texture, immediate=True):
@@ -485,7 +452,7 @@ class RootSystem(object):
                 if (((x + dx, y + dy, z + dz) not in self.world.world) or (self.world.world[(x + dx, y + dy, z + dz)]==TEXTURES[4])) and y+dy<=0:
                     moves.append(((x,y,z),(x+dx,y+dy,z+dz)))
         return moves
-            
+
     def remove_block(self, position, immediate=True):
         """ Remove the block at the given `position`.
 
@@ -595,25 +562,14 @@ class Window(pyglet.window.Window):
         self.currentPlayerIndex = 0
 
         self.positionLabel = pyglet.text.Label('', font_name="Arial", font_size=18, x=self.width/2,
-                                        anchor_x='center', y=self.height-10, anchor_y='top',
-                                        color=(255,255,255,255))
+                                               anchor_x='center', y=self.height-10, anchor_y='top',
+                                               color=(255,255,255,255))
 
-<<<<<<< HEAD
-        self.actionLabel = pyglet.text.Label(ACTION_TEXT+"1", font_name="Arial", font_size=18, x=self.width/2,
-                                             anchor_x="center", y=10, anchor_y="bottom", color=TEXTURE_COLORS[1])
-
-        self.controlsLabel = pyglet.text.Label(ACTION_TEXT+"1", font_name="Arial", font_size=18, x=self.width/4,
-=======
-        self.controlsLabel = pyglet.text.Label("", font_name="Arial", font_size=18, x=self.width/4, 
->>>>>>> 07a79a827791f2cfe4e14f0fe196a101be9a5957
-                                             anchor_x="center", y=10, anchor_y="bottom", color=(255,255,255,255))
+        self.controlsLabel = pyglet.text.Label("", font_name="Arial", font_size=18, x=self.width/4,
+                                               anchor_x="center", y=10, anchor_y="bottom", color=(255,255,255,255))
         self.controlsLabel.text = "l-grow r-fork"
 
-<<<<<<< HEAD
-        self.energyLabel = pyglet.text.Label(ACTION_TEXT+"1", font_name="Arial", font_size=18, x=self.width/5,
-=======
-        self.energyLabel = pyglet.text.Label("", font_name="Arial", font_size=18, x=self.width/5, 
->>>>>>> 07a79a827791f2cfe4e14f0fe196a101be9a5957
+        self.energyLabel = pyglet.text.Label("", font_name="Arial", font_size=18, x=self.width/5,
                                              anchor_x="center", y=self.height-10, anchor_y="top", color=(255,0,0,255))
 
         # This call schedules the `update()` method to be called
@@ -686,76 +642,6 @@ class Window(pyglet.window.Window):
         """
         speed = SPEED
         d = dt * speed # distance covered this tick.
-<<<<<<< HEAD
-        #dx, dy, dz = self.get_motion_vector()
-        t, p, r = self.spherical
-        dt, dp, dr = [x * d for x in self.motion]
-
-        # speed up smaller circles--but not too fast
-        speedup = min(0.5, 1 / math.cos(math.radians(p)) / r)
-
-        t += (180 * dt / math.pi * speedup)
-        while t >= 360: t -= 360
-        while t < 0: t += 360
-        p += (180 * dp / math.pi / r)
-        if p > 90: p = 90
-        if p < -90: p = -90
-        r += dr
-        if r < 1: r = 1
-
-        self.spherical = (t, p, r)
-
-#    def on_mouse_press(self, x, y, button, modifiers):
-#        """ Called when a mouse button is pressed. See pyglet docs for button
-#        amd modifier mappings.
-#
-#        Parameters
-#        ----------
-#        x, y : int
-#            The coordinates of the mouse click. Always center of the screen if
-#            the mouse is captured.
-#        button : int
-#            Number representing mouse button that was clicked. 1 = left button,
-#            4 = right button.
-#        modifiers : int
-#            Number representing any modifying keys that were pressed when the
-#            mouse button was clicked.
-#
-#        """
-#        if self.exclusive:
-#            vector = self.get_sight_vector()
-#            block, previous = self.rootSystem.hit_test(self.position, vector)
-#            if (button == mouse.RIGHT) or \
-#                    ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
-#                # ON OSX, control + left click = right click.
-#                if previous:
-#                    self.rootSystem.add_block(previous, self.block)
-#            elif button == pyglet.window.mouse.LEFT and block:
-#                texture = self.rootSystem.world[block]
-#                if texture != TIP3:
-#                    self.rootSystem.remove_block(block)
-#        else:
-#            self.set_exclusive_mouse(True)
-
-#    def on_mouse_motion(self, x, y, dx, dy):
-#        """ Called when the player moves the mouse.
-#
-#        Parameters
-#        ----------
-#        x, y : int
-#            The coordinates of the mouse click. Always center of the screen if
-#            the mouse is captured.
-#        dx, dy : float
-#            The movement of the mouse.
-#
-#        """
-#        if self.exclusive:
-#            m = 0.15
-#            x, y = self.rotation
-#            x, y = x + dx * m, y + dy * m
-#            y = max(-90, min(90, y))
-#            self.rotation = (x, y)
-=======
         x, y, z = self.position
         dx, dy, dz = [a * d for a in self.motion]
         theta = math.radians(self.rotation[0])
@@ -764,7 +650,7 @@ class Window(pyglet.window.Window):
         z += dx*math.sin(theta) + dz*math.cos(theta)
         self.position = (x, y, z)
 
-        
+
 
     def on_mouse_press(self, x, y, button, modifiers):
         """ Called when a mouse button is pressed. See pyglet docs for button
@@ -817,7 +703,6 @@ class Window(pyglet.window.Window):
             x, y = x + dx * m, y + dy * m
             y = max(-90, min(90, y))
             self.rotation = (x, y)
->>>>>>> 07a79a827791f2cfe4e14f0fe196a101be9a5957
 
     def on_key_press(self, symbol, modifiers):
         """ Called when the player presses a key. See pyglet docs for key
