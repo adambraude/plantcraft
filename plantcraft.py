@@ -18,6 +18,9 @@ TICKS_PER_SEC = 60
 
 SPEED = 15
 
+PROX = True
+PROX_RANGE = 5
+
 INIT_ENERGY = 500
 ENERGY = INIT_ENERGY
 ROOT_COST = 10
@@ -110,7 +113,16 @@ class RootSystem(object):
             self.add_block((0,i,0), STALK_TEXTURE)
 
         for i in range(1,100):
-            self.add_block((random.randint(-20,20), random.randint(-20,0),random.randint(-20,20)), TEXTURES[4])
+            x = random.randint(-20,20)
+            y = random.randint(-20,0)
+            z = random.randint(-20,20)
+            self.add_block((x, y, z), TEXTURES[4])
+            if PROX:
+                self.hide_block((x, y, z))
+
+        if PROX:
+            for i in range(1, len(self.tipPositions)):
+                self.proxUpdate(self.tipPositions[i], self.tipPositions[i])
 
     def addToTip(self, whichTip, direction):
         global ENERGY #KLUDGE. Replace with good design later
@@ -127,17 +139,51 @@ class RootSystem(object):
         if newTip in self.world:
             if self.world[newTip] == TEXTURES[4]:
                 ENERGY+=ENERGY_REWARD
+                #.hide_block(newTip)
+                self.uncolorBlock(newTip)
+                self.remove_block(newTip)
             else: return False
         #if newTip in self.world: return False
         if newTip[1] > 0: return False
         ENERGY -= ROOT_COST
 
         self.uncolorBlock(oldTip)
-        
+
         self.add_block(newTip, TEXTURES[whichTip])
         self.tipPositions[whichTip] = newTip
             #print(str(oldTip) +" -> " + str(newTip))
+        if PROX:
+            self.proxUpdate(newTip, oldTip)
         return True
+
+    def proxUpdate(self, position, old_position):
+        x, y, z = position
+        x_old, y_old, z_old = old_position
+        if position == old_position:
+            for i in range(x-PROX_RANGE, x+PROX_RANGE + 1):
+                for j in range(y-PROX_RANGE, y+PROX_RANGE + 1):
+                    for k in range(z-PROX_RANGE, z+PROX_RANGE + 1):
+                        new_pos = (i, j, k)
+                        if new_pos in self.world and self.world[new_pos] == TEXTURES[4]:
+                            self.show_block(new_pos)
+        if x == x_old and y == y_old:
+            for i in range (x-PROX_RANGE, x+PROX_RANGE + 1):
+                for j in range (y-PROX_RANGE, y+PROX_RANGE + 1):
+                    new_pos = (i, j, z)
+                    if new_pos in self.world and self.world[new_pos] == TEXTURES[4]:
+                        self.show_block(new_pos)
+        elif y == y_old and z == z_old:
+            for j in range (y-PROX_RANGE, y+PROX_RANGE + 1):
+                for k in range (z-PROX_RANGE, z+PROX_RANGE + 1):
+                    new_pos = (x, j, k)
+                    if new_pos in self.world and self.world[new_pos] == TEXTURES[4]:
+                                    self.show_block(new_pos)
+        elif z == z_old and x == x_old:
+            for i in range (x-PROX_RANGE, x+PROX_RANGE + 1):
+                for k in range (z-PROX_RANGE, z+PROX_RANGE + 1):
+                    new_pos = (i, y, k)
+                    if new_pos in self.world and self.world[new_pos] == TEXTURES[4]:
+                        self.show_block(new_pos)
 
     @staticmethod
     def modByDirection(start, direc):
@@ -194,7 +240,7 @@ class RootSystem(object):
             if immediate:
                 self.hide_block(position)
                 self.show_block(position)
-            
+
     def remove_block(self, position, immediate=True):
         """ Remove the block at the given `position`.
 
@@ -372,18 +418,18 @@ class Window(pyglet.window.Window):
         # Instance of the model that handles the world.
         self.rootSystem = RootSystem()
 
-        self.positionLabel = pyglet.text.Label('', font_name="Arial", font_size=18, x=self.width/2, 
-                                        anchor_x='center', y=self.height-10, anchor_y='top', 
+        self.positionLabel = pyglet.text.Label('', font_name="Arial", font_size=18, x=self.width/2,
+                                        anchor_x='center', y=self.height-10, anchor_y='top',
                                         color=(255,255,255,255))
 
-        self.actionLabel = pyglet.text.Label(ACTION_TEXT+"1", font_name="Arial", font_size=18, x=self.width/2, 
+        self.actionLabel = pyglet.text.Label(ACTION_TEXT+"1", font_name="Arial", font_size=18, x=self.width/2,
                                              anchor_x="center", y=10, anchor_y="bottom", color=TEXTURE_COLORS[1])
 
-        self.controlsLabel = pyglet.text.Label(ACTION_TEXT+"1", font_name="Arial", font_size=18, x=self.width/4, 
+        self.controlsLabel = pyglet.text.Label(ACTION_TEXT+"1", font_name="Arial", font_size=18, x=self.width/4,
                                              anchor_x="center", y=10, anchor_y="bottom", color=(255,255,255,255))
         self.controlsLabel.text = "nsewud"
 
-        self.energyLabel = pyglet.text.Label(ACTION_TEXT+"1", font_name="Arial", font_size=18, x=self.width/5, 
+        self.energyLabel = pyglet.text.Label(ACTION_TEXT+"1", font_name="Arial", font_size=18, x=self.width/5,
                                              anchor_x="center", y=self.height-10, anchor_y="top", color=(255,0,0,255))
 
         # This call schedules the `update()` method to be called
@@ -453,7 +499,7 @@ class Window(pyglet.window.Window):
 
         t += (180 * dt / math.pi * speedup)
         while t >= 360: t -= 360
-        while t < 0: t += 360 
+        while t < 0: t += 360
         p += (180 * dp / math.pi / r)
         if p > 90: p = 90
         if p < -90: p = -90
