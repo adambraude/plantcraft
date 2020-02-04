@@ -13,17 +13,14 @@ from pyglet.window import key, mouse
 
 TICKS_PER_SEC = 60
 
-# Size of sectors used to ease block loading.
-#SECTOR_SIZE = 16
-
 SPEED = 15
 
 PROX = True
 PROX_RANGE = 5
 
 INIT_ENERGY = 500
-ENERGY = INIT_ENERGY
 ROOT_COST = 10
+FORK_COST = 50
 ENERGY_REWARD = 100
 
 DEGREES= u'\N{DEGREE SIGN}'
@@ -31,6 +28,23 @@ DIRECTIONS = (key.N, key.S, key.W, key.E, key.U, key.D)
 NUM_KEYS = (key._1, key._2, key._3, key._4, key._5, key._6, key._7, key._8, key._9, key._0)
 
 TEXTURE_PATH = "roots.png"
+
+def normalize(position):
+    """ Accepts `position` of arbitrary precision and returns the block
+    containing that position.
+
+    Parameters
+    ----------
+    position : tuple of len 3
+
+    Returns
+    -------
+    block_position : tuple of ints of len 3
+
+    """
+    x, y, z = position
+    x, y, z = (int(round(x)), int(round(y)), int(round(z)))
+    return (x, y, z)
 
 if sys.version_info[0] >= 3:
     xrange = range
@@ -57,16 +71,13 @@ def calcTextureCoords(which, n=8):
     return 6*[left, 0, right, 0, right, 1, left, 1]
 
 TEXTURES = (calcTextureCoords(1), calcTextureCoords(2), calcTextureCoords(3), calcTextureCoords(4), calcTextureCoords(5))
-#TEXTURES = (calcTextureCoords(1), calcTextureCoords(0), calcTextureCoords(0), calcTextureCoords(0))
 STALK_TEXTURE = calcTextureCoords(0)
-#TEXTURE_COLORS = (None, (255,128,128,255), (128,255,153,255), (128,153,255,255))
 TEXTURE_COLORS = (None, (128,255,255,255), (128,180,255,255), (204, 128, 255, 255))
-ACTION_TEXT = "Adding to root tip "
 
 FACES = [( 0, 1, 0), ( 0,-1, 0), (-1, 0, 0), ( 1, 0, 0), ( 0, 0, 1), ( 0, 0,-1),]
 
 
-class RootSystem(object):
+class World(object):
 
     def __init__(self):
 
@@ -100,17 +111,6 @@ class RootSystem(object):
         """ Initialize the world by placing all the blocks.
 
         """
-        #n = 80  # 1/2 width and height of world
-        #s = 1  # step size
-        #y = 0  # initial y height
-
-        self.tipPositions = [None, (-1,0,0), (1,0,0), (0,-1,0)]
-        for i in range(1,len(self.tipPositions)):
-            self.add_block(self.tipPositions[i], TEXTURES[i])
-
-        self.add_block((0,0,0), TEXTURES[0])
-        for i in range(1,60):
-            self.add_block((0,i,0), STALK_TEXTURE)
 
         for i in range(1,100):
             x = random.randint(-20,20)
@@ -124,6 +124,7 @@ class RootSystem(object):
             for i in range(1, len(self.tipPositions)):
                 self.proxUpdate(self.tipPositions[i], self.tipPositions[i])
 
+<<<<<<< HEAD
     def addToTip(self, whichTip, direction):
         global ENERGY #KLUDGE. Replace with good design later
         if (ENERGY <= ROOT_COST): return False
@@ -185,6 +186,8 @@ class RootSystem(object):
                     if new_pos in self.world and self.world[new_pos] == TEXTURES[4]:
                         self.show_block(new_pos)
 
+=======
+>>>>>>> 07a79a827791f2cfe4e14f0fe196a101be9a5957
     @staticmethod
     def modByDirection(start, direc):
         if direc==key.N or direc=='n' or direc=='N': return (start[0], start[1], start[2]-1)
@@ -371,6 +374,180 @@ class RootSystem(object):
         while self.queue:
             self._dequeue()
 
+    def hit_test(self, position, vector, max_distance=8, ignore=[]):
+        """ Line of sight search from current position. If a block is
+        intersected it is returned, along with the block previously in the line
+        of sight. If no block is found, return None, None.
+
+        Parameters
+        ----------
+        position : tuple of len 3
+            The (x, y, z) position to check visibility from.
+        vector : tuple of len 3
+            The line of sight vector.
+        max_distance : int
+            How many blocks away to search for a hit.
+
+        """
+        m = 8
+        x, y, z = position
+        dx, dy, dz = vector
+        previous = None
+        for _ in xrange(max_distance * m):
+            key = normalize((x, y, z))
+            if key != previous and ((key in self.world) and (self.world[key] not in ignore)) and previous:
+                if abs(key[0]-previous[0])+abs(key[1]-previous[1])+abs(key[2]-previous[2])>1:
+                    previous = (previous[0], key[1], previous[2])
+                    if abs(key[0]-previous[0]) + abs(key[2]-previous[2])>1:
+                        previous=(key[0], previous[1], previous[2])
+                return key, previous
+            previous = key
+            x, y, z = x + dx / m, y + dy / m, z + dz / m
+        return None, None
+
+class RootSystem(object):
+
+    def __init__(self, world, position):
+
+        self.world = world
+        
+        self.energy = INIT_ENERGY
+        self.tipTex = TEXTURES[2]
+
+        # A mapping from position to the texture of the block at that position.
+        # This defines all the blocks that are currently in the world.
+        self.blocks = {}
+        self.tips = {}
+
+        self._initialize(position)
+
+
+    def _initialize(self, position):
+        """ Initialize the world by placing all the blocks.
+
+        """
+        x,y,z = position
+        self.tipPositions = [None, (x-1,y,z), (x+1,y,z), (x,y-1,z)]
+        for i in range(1,len(self.tipPositions)):
+            self.add_block(self.tipPositions[i], self.tipTex)
+
+        self.add_block((x,y,z), TEXTURES[0])
+        for i in range(1,6):
+            self.add_block((x,y+i,z), STALK_TEXTURE)
+
+    def addToTip(self, oldTip, newTip, fork=False):
+        if (self.energy < ROOT_COST): return False
+        if (fork and self.energy < FORK_COST): return False
+
+        # don't accept new positions that collide or are above ground
+        if newTip in self.world.world:
+            if self.world.world[newTip] == TEXTURES[4]:
+                self.energy+=ENERGY_REWARD
+            else: return False
+        #if newTip in self.world: return False
+        if newTip[1] > 0: return False
+        
+        if (fork): self.energy -= FORK_COST
+        else: self.energy -= ROOT_COST
+
+        if (not fork):
+            self.world.uncolorBlock(oldTip)
+            del self.tips[oldTip]
+        
+        self.add_block(newTip, self.tipTex)
+        #self.tipPositions[whichTip] = newTip
+            #print(str(oldTip) +" -> " + str(newTip))
+        return True
+
+    def add_block(self, position, texture, immediate=True):
+        """ Add a block with the given `texture` and `position` to the world.
+
+        Parameters
+        ----------
+        position : tuple of len 3
+            The (x, y, z) position of the block to add.
+        texture : list of len 3
+            The coordinates of the texture squares. Use `tex_coords()` to
+            generate.
+        immediate : bool
+            Whether or not to draw the block immediately.
+
+        """
+        self.blocks[position] = True
+        if texture==self.tipTex: self.tips[position] = True
+        self.world.add_block(position, texture, immediate)
+
+    def legalMoves(self):
+        moves = []
+        for tip in self.tips.keys():
+            x,y,z = tip
+            for dx, dy, dz in FACES:
+                if (((x + dx, y + dy, z + dz) not in self.world.world) or (self.world.world[(x + dx, y + dy, z + dz)]==TEXTURES[4])) and y+dy<=0:
+                    moves.append(((x,y,z),(x+dx,y+dy,z+dz)))
+        return moves
+            
+    def remove_block(self, position, immediate=True):
+        """ Remove the block at the given `position`.
+
+        Parameters
+        ----------
+        position : tuple of len 3
+            The (x, y, z) position of the block to remove.
+        immediate : bool
+            Whether or not to immediately remove block from canvas.
+
+        """
+        del self.blocks[position]
+        self.world.add_block(position,texture,immediate)
+
+    def hit_test(self, position, vector, max_distance=8, ignore=[]):
+        """ Line of sight search from current position. If a block is
+        intersected it is returned, along with the block previously in the line
+        of sight. If no block is found, return None, None.
+
+        Parameters
+        ----------
+s        position : tuple of len 3
+            The (x, y, z) position to check visibility from.
+        vector : tuple of len 3
+            The line of sight vector.
+        max_distance : int
+            How many blocks away to search for a hit.
+
+        """
+        m = 8
+        x, y, z = position
+        dx, dy, dz = vector
+        previous = None
+        for _ in xrange(max_distance * m):
+            key = normalize((x, y, z))
+            if key != previous and ((key in self.blocks)and (key in self.world.world)and (self.world.world[key] not in ignore)) and previous:
+                if abs(key[0]-previous[0])+abs(key[1]-previous[1])+abs(key[2]-previous[2])>1:
+                    previous = (previous[0], key[1], previous[2])
+                    if abs(key[0]-previous[0]) + abs(key[2]-previous[2])>1:
+                        previous=(key[0], previous[1], previous[2])
+                return key, previous
+            previous = key
+            x, y, z = x + dx / m, y + dy / m, z + dz / m
+        return None, None
+
+class Player(object):
+
+    def __init__(self, rootSystem, window):
+        self.rootSystem = rootSystem
+        self.window = window
+
+    def takeTurn(self):
+        pass
+
+class HumanPlayer(Player):
+    pass
+
+class RandomPlayer(Player):
+    def takeTurn(self):
+        moves = self.rootSystem.legalMoves()
+        move = random.choice(moves)
+        self.rootSystem.addToTip(move[0],move[1])
 
 class Window(pyglet.window.Window):
 
@@ -390,8 +567,7 @@ class Window(pyglet.window.Window):
 
         # Current (x, y, z) position in the world, specified with floats. Note
         # that, perhaps unlike in math class, the y-axis is the vertical axis.
-        #self.position = (0, 0, 10)
-        self.spherical = (0, 0, 10)
+        self.position = (0, 0, 10)
 
         # First element is rotation of the player in the x-z plane (ground
         # plane) measured from the z-axis down. The second is the rotation
@@ -400,41 +576,59 @@ class Window(pyglet.window.Window):
         # The vertical plane rotation ranges from -90 (looking straight down) to
         # 90 (looking straight up). The horizontal rotation range is unbounded.
         self.rotation = (0, 0)
-
-        # Which sector the player is currently in.
-        #self.sector = None
+        self.reticle = None
 
         # Velocity in the y (upward) direction.
         self.dy = 0
 
-        # A list of blocks the player can place. Hit num keys to cycle.
-        #self.inventory = [TIP2, BAREROOT, TIP1]
-
-        # The current block the user can place. Hit num keys to cycle.
-        #self.block = self.inventory[0]
-
-        self.currentTip = 1
-
         # Instance of the model that handles the world.
-        self.rootSystem = RootSystem()
+        self.world = World()
+
+        self.rootSystems = []
+        for i in range(2):
+            self.rootSystems.append(RootSystem(self.world, (10*i,0,0) ))
+
+        self.players = []
+        self.players.append(HumanPlayer(self.rootSystems[0], self))
+        self.players.append(RandomPlayer(self.rootSystems[1], self))
+
+        self.currentPlayerIndex = 0
 
         self.positionLabel = pyglet.text.Label('', font_name="Arial", font_size=18, x=self.width/2,
                                         anchor_x='center', y=self.height-10, anchor_y='top',
                                         color=(255,255,255,255))
 
+<<<<<<< HEAD
         self.actionLabel = pyglet.text.Label(ACTION_TEXT+"1", font_name="Arial", font_size=18, x=self.width/2,
                                              anchor_x="center", y=10, anchor_y="bottom", color=TEXTURE_COLORS[1])
 
         self.controlsLabel = pyglet.text.Label(ACTION_TEXT+"1", font_name="Arial", font_size=18, x=self.width/4,
+=======
+        self.controlsLabel = pyglet.text.Label("", font_name="Arial", font_size=18, x=self.width/4, 
+>>>>>>> 07a79a827791f2cfe4e14f0fe196a101be9a5957
                                              anchor_x="center", y=10, anchor_y="bottom", color=(255,255,255,255))
-        self.controlsLabel.text = "nsewud"
+        self.controlsLabel.text = "l-grow r-fork"
 
+<<<<<<< HEAD
         self.energyLabel = pyglet.text.Label(ACTION_TEXT+"1", font_name="Arial", font_size=18, x=self.width/5,
+=======
+        self.energyLabel = pyglet.text.Label("", font_name="Arial", font_size=18, x=self.width/5, 
+>>>>>>> 07a79a827791f2cfe4e14f0fe196a101be9a5957
                                              anchor_x="center", y=self.height-10, anchor_y="top", color=(255,0,0,255))
 
         # This call schedules the `update()` method to be called
         # TICKS_PER_SEC. This is the main game event loop.
         pyglet.clock.schedule_interval(self.update, 1.0 / TICKS_PER_SEC)
+        self.currentPlayer().takeTurn()
+
+    def nextTurn(self):
+        self.currentPlayerIndex += 1
+        if self.currentPlayerIndex >= len(self.players):
+            self.currentPlayerIndex = 0
+        self.players[self.currentPlayerIndex].takeTurn()
+
+    def currentPlayer(self):
+        return self.players[self.currentPlayerIndex]
 
     def set_exclusive_mouse(self, exclusive):
         """ If `exclusive` is True, the game will capture the mouse, if False
@@ -472,11 +666,13 @@ class Window(pyglet.window.Window):
 
         """
         #self.rootSystem.process_queue()
-        self.rootSystem.process_entire_queue()
+        self.world.process_entire_queue()
         m = 8
         dt = min(dt, 0.2)
         for _ in xrange(m):
             self._update(dt / m)
+        if (not isinstance(self.currentPlayer(), HumanPlayer)):
+            self.nextTurn()
 
     def _update(self, dt):
         """ Private implementation of the `update()` method. This is where most
@@ -490,6 +686,7 @@ class Window(pyglet.window.Window):
         """
         speed = SPEED
         d = dt * speed # distance covered this tick.
+<<<<<<< HEAD
         #dx, dy, dz = self.get_motion_vector()
         t, p, r = self.spherical
         dt, dp, dr = [x * d for x in self.motion]
@@ -558,6 +755,69 @@ class Window(pyglet.window.Window):
 #            x, y = x + dx * m, y + dy * m
 #            y = max(-90, min(90, y))
 #            self.rotation = (x, y)
+=======
+        x, y, z = self.position
+        dx, dy, dz = [a * d for a in self.motion]
+        theta = math.radians(self.rotation[0])
+        x += dx*math.cos(theta) + -dz*math.sin(theta)
+        y += dy
+        z += dx*math.sin(theta) + dz*math.cos(theta)
+        self.position = (x, y, z)
+
+        
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        """ Called when a mouse button is pressed. See pyglet docs for button
+        amd modifier mappings.
+
+        Parameters
+        ----------
+        x, y : int
+            The coordinates of the mouse click. Always center of the screen if
+            the mouse is captured.
+        button : int
+            Number representing mouse button that was clicked. 1 = left button,
+            4 = right button.
+        modifiers : int
+            Number representing any modifying keys that were pressed when the
+            mouse button was clicked.
+
+        """
+        if self.exclusive and isinstance(self.currentPlayer(), HumanPlayer):
+            vector = self.get_sight_vector()
+            block, previous = self.rootSystems[self.currentPlayerIndex].hit_test(self.position, vector, 8, [TEXTURES[4]])
+            if block and (self.world.world[block] == TEXTURES[2]):
+                if (button == mouse.RIGHT) or \
+                        ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
+                    # ON OSX, control + left click = right click.
+                    if previous:
+                        self.rootSystems[self.currentPlayerIndex].addToTip(block, previous,True)
+                        self.nextTurn()
+                elif button == pyglet.window.mouse.LEFT and block and previous:
+                    self.rootSystems[self.currentPlayerIndex].addToTip(block, previous)
+                    self.nextTurn()
+        else:
+            self.set_exclusive_mouse(True)
+
+    def on_mouse_motion(self, x, y, dx, dy):
+        """ Called when the player moves the mouse.
+
+        Parameters
+        ----------
+        x, y : int
+            The coordinates of the mouse click. Always center of the screen if
+            the mouse is captured.
+        dx, dy : float
+            The movement of the mouse.
+
+        """
+        if self.exclusive:
+            m = 0.15
+            x, y = self.rotation
+            x, y = x + dx * m, y + dy * m
+            y = max(-90, min(90, y))
+            self.rotation = (x, y)
+>>>>>>> 07a79a827791f2cfe4e14f0fe196a101be9a5957
 
     def on_key_press(self, symbol, modifiers):
         """ Called when the player presses a key. See pyglet docs for key
@@ -572,27 +832,20 @@ class Window(pyglet.window.Window):
 
         """
 
-        if symbol == key.LEFT:
+        if symbol == key.LEFT or symbol== key.A:
             self.motion[0] -= 1
-        elif symbol == key.RIGHT:
+        elif symbol == key.RIGHT or symbol == key.D:
             self.motion[0] += 1
-        elif symbol == key.UP:
+        elif symbol == key.SPACE:
             self.motion[1] += 1
-        elif symbol == key.DOWN:
+        elif symbol == key.LSHIFT:
             self.motion[1] -= 1
-        elif symbol == key.PAGEUP:
+        elif symbol == key.UP or symbol == key.W:
             self.motion[2] -= 1
-        elif symbol == key.PAGEDOWN:
+        elif symbol == key.DOWN or symbol == key.S:
             self.motion[2] += 1
         elif symbol == key.ESCAPE:
             self.set_exclusive_mouse(False)
-        elif symbol in NUM_KEYS:
-            self.currentTip = (symbol - NUM_KEYS[0]) % (len(TEXTURES) - 1) + 1
-            self.actionLabel.text = ACTION_TEXT + str(self.currentTip)
-            self.actionLabel.color = TEXTURE_COLORS[self.currentTip]
-            #self.block = self.inventory[index]
-        elif symbol in DIRECTIONS:
-            self.rootSystem.addToTip(self.currentTip, symbol)
 
     def on_key_release(self, symbol, modifiers):
         """ Called when the player releases a key. See pyglet docs for key
@@ -606,17 +859,17 @@ class Window(pyglet.window.Window):
             Number representing any modifying keys that were pressed.
 
         """
-        if symbol == key.LEFT:
+        if symbol == key.LEFT or symbol== key.A:
             self.motion[0] += 1
-        elif symbol == key.RIGHT:
+        elif symbol == key.RIGHT or symbol == key.D:
             self.motion[0] -= 1
-        elif symbol == key.UP:
+        elif symbol == key.SPACE:
             self.motion[1] -= 1
-        elif symbol == key.DOWN:
+        elif symbol == key.LSHIFT:
             self.motion[1] += 1
-        elif symbol == key.PAGEUP:
+        elif symbol == key.UP or symbol == key.W:
             self.motion[2] += 1
-        elif symbol == key.PAGEDOWN:
+        elif symbol == key.DOWN or symbol == key.S:
             self.motion[2] -= 1
 
     def on_resize(self, width, height):
@@ -624,8 +877,16 @@ class Window(pyglet.window.Window):
 
         """
         # adjust labels
-        self.positionLabel.x = self.actionLabel.x = width/2
+        self.positionLabel.x = width/2
         self.positionLabel.y = height-10
+        #reticle
+        if self.reticle:
+            self.reticle.delete()
+        x, y = self.width // 2, self.height // 2
+        n = 10
+        self.reticle = pyglet.graphics.vertex_list(4,
+            ('v2i', (x - n, y, x + n, y, x, y - n, x, y + n))
+        )
 
     def set_2d(self):
         """ Configure OpenGL to draw in 2d.
@@ -656,9 +917,26 @@ class Window(pyglet.window.Window):
         glLoadIdentity()
 
         # remember OpenGL is backwards!
-        glTranslatef(0, 0, -self.spherical[2])
-        glRotatef(self.spherical[1], 1, 0, 0)
-        glRotatef(-self.spherical[0], 0, 1, 0)
+        x, y = self.rotation
+        glRotatef(x, 0, 1, 0)
+        glRotatef(-y, math.cos(math.radians(x)), 0, math.sin(math.radians(x)))
+        x,y,z = self.position
+        glTranslatef(-x, -y, -z)
+
+    def draw_focused_block(self):
+        """ Draw black edges around the block that is currently under the
+        crosshairs.
+
+        """
+        vector = self.get_sight_vector()
+        block, previous = self.rootSystems[self.currentPlayerIndex].hit_test(self.position, vector, 8, [TEXTURES[4]])
+        if block and (self.world.world[block] == TEXTURES[2]):
+            x, y, z = previous
+            vertex_data = cube_vertices(x, y, z, 0.51)
+            glColor3d(0, 0, 0)
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+            pyglet.graphics.draw(24, GL_QUADS, ('v3f/static', vertex_data))
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
     def on_draw(self):
         """ Called by pyglet to draw the canvas.
@@ -667,29 +945,29 @@ class Window(pyglet.window.Window):
         self.clear()
         self.set_3d()
         glColor3d(1, 1, 1)
-        self.rootSystem.batch.draw()
-        #self.draw_focused_block()
+        self.world.batch.draw()
+        if isinstance(self.currentPlayer(), HumanPlayer): self.draw_focused_block()
         self.set_2d()
         self.draw_labels()
+        self.draw_reticle()
 
-    def draw_labels(self):
-        """ Draw the label in the top left of the screen.
+    def draw_reticle(self):
+        """ Draw the crosshairs in the center of the screen.
 
         """
-        #x, y, z = self.position
-        #self.label.text = '%02d (%.2f, %.2f, %.2f) %d / %d' % (pyglet.clock.get_fps(), x, y, z, len(self.rootSystem._shown), len(self.rootSystem.world))
-        #self.label.draw()
+        glColor3d(0, 0, 0)
+        self.reticle.draw(GL_LINES)
 
-        #self.rLabel.text = "%.2f, %.2f" % (self.rotation[0], self.rotation[1])
-        #self.rLabel.draw()
+    def draw_labels(self):
+        """ Draw all the random text around the screen
 
-        self.positionLabel.text = "(%d%s, %d%s, %.1f)" % (self.spherical[0], DEGREES, self.spherical[1], DEGREES, self.spherical[2])
+        """
+        self.positionLabel.text = "(%d,%d,%d,%d%s,%d%s)" % (self.position[0], self.position[1], self.position[2], self.rotation[0], DEGREES, self.rotation[1], DEGREES)
         self.positionLabel.draw()
 
-        self.actionLabel.draw()
         self.controlsLabel.draw()
 
-        self.energyLabel.text = "Energy remaining: %d" % (ENERGY)
+        self.energyLabel.text = "Energy remaining: %d" % (self.rootSystems[self.currentPlayerIndex].energy)
         self.energyLabel.draw()
 
 def setup_fog():
@@ -735,7 +1013,7 @@ def setup():
 def main():
     window = Window(width=800, height=600, caption='PlantCraft', resizable=True)
     # Hide the mouse cursor and prevent the mouse from leaving the window.
-    #window.set_exclusive_mouse(True)
+    window.set_exclusive_mouse(True)
     setup()
     pyglet.app.run()
 
