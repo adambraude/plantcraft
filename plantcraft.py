@@ -20,6 +20,8 @@ ROOT_COST = 10
 FORK_COST = 50
 ENERGY_REWARD = 100
 
+TWODMODE = False
+
 DEGREES= u'\N{DEGREE SIGN}'
 DIRECTIONS = (key.N, key.S, key.W, key.E, key.U, key.D)
 NUM_KEYS = (key._1, key._2, key._3, key._4, key._5, key._6, key._7, key._8, key._9, key._0)
@@ -72,6 +74,7 @@ STALK_TEXTURE = calcTextureCoords(0)
 TEXTURE_COLORS = (None, (128,255,255,255), (128,180,255,255), (204, 128, 255, 255))
 
 FACES = [( 0, 1, 0), ( 0,-1, 0), (-1, 0, 0), ( 1, 0, 0), ( 0, 0, 1), ( 0, 0,-1),]
+LATFACES = [(-1, 0, 0), ( 1, 0, 0), ( 0, 0, 1), ( 0, 0,-1)]
 
 
 class World(object):
@@ -108,7 +111,15 @@ class World(object):
         """ Initialize the world by placing all the blocks.
 
         """
-
+        if TWODMODE:
+            for i in range(1,1000):
+                x=random.randint(-30,30)
+                z=random.randint(-30,30)
+                while (x,0,z) in self.world:
+                   x=random.randint(-30,30)
+                   z=random.randint(-30,30)
+                self.add_block((x,0,z), TEXTURES[4])
+            return
         for i in range(1,100):
             self.add_block((random.randint(-20,20), random.randint(-20,0),random.randint(-20,20)), TEXTURES[4])
 
@@ -351,7 +362,7 @@ class RootSystem(object):
 
         """
         x,y,z = position
-        self.tipPositions = [None, (x-1,y,z), (x+1,y,z), (x,y-1,z)]
+        self.tipPositions = [None, (x-1,y,z), (x+1,y,z), (x,y,z+1),(x,y,z-1)]
         for i in range(1,len(self.tipPositions)):
             self.add_block(self.tipPositions[i], self.tipTex)
 
@@ -405,7 +416,11 @@ class RootSystem(object):
         moves = []
         for tip in self.tips.keys():
             x,y,z = tip
-            for dx, dy, dz in FACES:
+            if TWODMODE:
+                f = LATFACES
+            else:
+                f = FACES
+            for dx, dy, dz in f:
                 if (((x + dx, y + dy, z + dz) not in self.world.world) or (self.world.world[(x + dx, y + dy, z + dz)]==TEXTURES[4])) and y+dy<=0:
                     moves.append(((x,y,z),(x+dx,y+dy,z+dz)))
         return moves
@@ -470,6 +485,7 @@ class HumanPlayer(Player):
 class RandomPlayer(Player):
     def takeTurn(self):
         moves = self.rootSystem.legalMoves()
+        if len(moves)==0: return
         move = random.choice(moves)
         self.rootSystem.addToTip(move[0],move[1])
 
@@ -513,7 +529,7 @@ class Window(pyglet.window.Window):
             self.rootSystems.append(RootSystem(self.world, (10*i,0,0) ))
 
         self.players = []
-        self.players.append(HumanPlayer(self.rootSystems[0], self))
+        self.players.append(RandomPlayer(self.rootSystems[0], self))
         self.players.append(RandomPlayer(self.rootSystems[1], self))
 
         self.currentPlayerIndex = 0
