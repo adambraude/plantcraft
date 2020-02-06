@@ -489,6 +489,35 @@ class RandomPlayer(Player):
         move = random.choice(moves)
         self.rootSystem.addToTip(move[0],move[1])
 
+class GreedyPlayer(Player):
+    def __init__(self, rootSystem, window):
+        super().__init__(rootSystem, window)
+        self.rootSystem.tipTex=TEXTURES[3]
+    
+    def takeTurn(self):
+        moves = self.rootSystem.legalMoves()
+        
+        target = None
+        tdist = 99999
+        #horrifyingly inefficient
+        for b in self.rootSystem.world.world.keys():
+            if self.rootSystem.world.world[b] == TEXTURES[4]:
+                for t in self.rootSystem.tips.keys():
+                    dist = abs(t[0]-b[0])+abs(t[1]-b[1])+abs(t[2]-b[2])
+                    if dist < tdist:
+                        tdist = dist
+                        target = b
+
+        newmoves = []
+        if target:
+            for m in moves:
+                if abs(m[1][0]-target[0])+abs(m[1][1]-target[1])+abs(m[1][2]-target[2]) < tdist:
+                    newmoves.append(m)
+
+        if len(newmoves)==0: return
+        move = random.choice(newmoves)
+        self.rootSystem.addToTip(move[0],move[1])
+
 class Window(pyglet.window.Window):
 
     def __init__(self, *args, **kwargs):
@@ -530,7 +559,7 @@ class Window(pyglet.window.Window):
 
         self.players = []
         self.players.append(RandomPlayer(self.rootSystems[0], self))
-        self.players.append(RandomPlayer(self.rootSystems[1], self))
+        self.players.append(GreedyPlayer(self.rootSystems[1], self))
 
         self.currentPlayerIndex = 0
 
