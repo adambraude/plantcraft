@@ -20,7 +20,7 @@ ROOT_COST = 10
 FORK_COST = 50
 ENERGY_REWARD = 100
 
-TWODMODE = False
+TWODMODE = True
 
 DEGREES= u'\N{DEGREE SIGN}'
 DIRECTIONS = (key.N, key.S, key.W, key.E, key.U, key.D)
@@ -420,9 +420,13 @@ class RootSystem(object):
                 f = LATFACES
             else:
                 f = FACES
+            free = False
             for dx, dy, dz in f:
                 if (((x + dx, y + dy, z + dz) not in self.world.world) or (self.world.world[(x + dx, y + dy, z + dz)]==TEXTURES[4])) and y+dy<=0:
                     moves.append(((x,y,z),(x+dx,y+dy,z+dz)))
+                    free = True
+            self.tips[tip] = free
+                    
         return moves
             
     def remove_block(self, position, immediate=True):
@@ -495,7 +499,7 @@ class GreedyPlayer(Player):
         self.rootSystem.tipTex=TEXTURES[3]
     
     def takeTurn(self):
-        moves = self.rootSystem.legalMoves()
+        moves = self.rootSystem.legalMoves()                  
         
         target = None
         tdist = 99999
@@ -504,7 +508,7 @@ class GreedyPlayer(Player):
             if self.rootSystem.world.world[b] == TEXTURES[4]:
                 for t in self.rootSystem.tips.keys():
                     dist = abs(t[0]-b[0])+abs(t[1]-b[1])+abs(t[2]-b[2])
-                    if dist < tdist:
+                    if dist < tdist and self.rootSystem.tips[t]:
                         tdist = dist
                         target = b
 
@@ -514,7 +518,16 @@ class GreedyPlayer(Player):
                 if abs(m[1][0]-target[0])+abs(m[1][1]-target[1])+abs(m[1][2]-target[2]) < tdist:
                     newmoves.append(m)
 
+        margin = 0
+        while len(newmoves)==0 and margin< 2 and self.rootSystem.energy>0:
+            margin += 1
+            if target:
+                for m in moves:
+                    if abs(m[1][0]-target[0])+abs(m[1][1]-target[1])+abs(m[1][2]-target[2]) < tdist+margin:
+                        newmoves.append(m)
+
         if len(newmoves)==0: return
+            
         move = random.choice(newmoves)
         self.rootSystem.addToTip(move[0],move[1])
 
