@@ -112,16 +112,9 @@ class World(object):
 
         """
         if TWODMODE:
-            for i in range(1,1000):
-                x=random.randint(-30,30)
-                z=random.randint(-30,30)
-                while (x,0,z) in self.world:
-                   x=random.randint(-30,30)
-                   z=random.randint(-30,30)
-                self.add_block((x,0,z), TEXTURES[4])
+            self.addNutrients(0.1, (-40, 40, 0, 1, -40, 40))
             return
-        for i in range(1,100):
-            self.add_block((random.randint(-20,20), random.randint(-20,0),random.randint(-20,20)), TEXTURES[4])
+        self.addNutrients(0.01, (-40, 40, -40, 0, -40, 40))
 
     @staticmethod
     def modByDirection(start, direc):
@@ -132,6 +125,19 @@ class World(object):
         if direc==key.U or direc=='u' or direc=='U': return (start[0], start[1]+1, start[2])
         if direc==key.D or direc=='d' or direc=='D': return (start[0], start[1]-1, start[2])
         return start
+
+    def addNutrients(self,density, bounds):
+    	""" Density is the probability that any given space will be a nutrient
+    	    bounds should be a 6-tuple (xmin,xmax,ymin,ymax,zmin,zmax)
+
+    	"""
+    	xmin,xmax,ymin,ymax,zmin,zmax = bounds
+    	for x in range(xmin,xmax):
+            for y in range(ymin, ymax):
+            	for z in range(zmin, zmax):
+            		if random.random()<density and ((x,y,z) not in self.world):
+            			self.add_block((x,y,z), TEXTURES[4])
+
 
     def exposed(self, position):
         """ Returns False is given `position` is surrounded on all 6 sides by
