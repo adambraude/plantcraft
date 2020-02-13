@@ -20,7 +20,7 @@ ROOT_COST = 10
 FORK_COST = 50
 ENERGY_REWARD = 100
 
-TWODMODE = True
+TWODMODE = False
 
 DEGREES= u'\N{DEGREE SIGN}'
 DIRECTIONS = (key.N, key.S, key.W, key.E, key.U, key.D)
@@ -114,7 +114,7 @@ class World(object):
         if TWODMODE:
             self.addNutrients(0.1, (-40, 40, 0, 1, -40, 40))
             return
-        self.addNutrients(0.01, (-40, 40, -40, 0, -40, 40))
+        self.addNutrients(0.005, (-20, 20, -40, 0, -20, 20))
 
     @staticmethod
     def modByDirection(start, direc):
@@ -127,16 +127,16 @@ class World(object):
         return start
 
     def addNutrients(self,density, bounds):
-    	""" Density is the probability that any given space will be a nutrient
-    	    bounds should be a 6-tuple (xmin,xmax,ymin,ymax,zmin,zmax)
+        """ Density is the probability that any given space will be a nutrient
+            bounds should be a 6-tuple (xmin,xmax,ymin,ymax,zmin,zmax)
 
-    	"""
-    	xmin,xmax,ymin,ymax,zmin,zmax = bounds
-    	for x in range(xmin,xmax):
+        """
+        xmin,xmax,ymin,ymax,zmin,zmax = bounds
+        for x in range(xmin,xmax):
             for y in range(ymin, ymax):
-            	for z in range(zmin, zmax):
-            		if random.random()<density and ((x,y,z) not in self.world):
-            			self.add_block((x,y,z), TEXTURES[4])
+                for z in range(zmin, zmax):
+                    if random.random()<density and ((x,y,z) not in self.world):
+                        self.add_block((x,y,z), TEXTURES[4])
 
 
     def exposed(self, position):
@@ -537,6 +537,70 @@ class GreedyPlayer(Player):
         move = random.choice(newmoves)
         self.rootSystem.addToTip(move[0],move[1])
 
+class GreedyForker(Player):
+    def __init__(self, rootSystem, window):
+        super().__init__(rootSystem, window)
+        self.rootSystem.tipTex=TEXTURES[3]
+    
+    def takeTurn(self):
+        moves = self.rootSystem.legalMoves()                  
+        
+        target = None
+        oldtarget = None
+        origin = None
+        tdist = 99999
+        olddist = 99999
+        oldorigin = None
+        fork = True
+        #find the closest and second closest nutrients
+        for b in self.rootSystem.world.world.keys():
+            if self.rootSystem.world.world[b] == TEXTURES[4]:
+                for t in self.rootSystem.tips.keys():
+                    dist = abs(t[0]-b[0])+abs(t[1]-b[1])+abs(t[2]-b[2])
+                    if dist <= tdist and self.rootSystem.tips[t]:
+                        tdist = dist
+                        if b != target:
+                            olddist = tdist
+                            oldtarget = target
+                            oldorigin = origin
+                        target = b
+                        origin = t
+
+        newmoves = []
+        if target:
+            for m in moves:
+                if abs(m[1][0]-target[0])+abs(m[1][1]-target[1])+abs(m[1][2]-target[2]) < tdist:
+                    newmoves.append(m)
+            #if there is a second closest
+            if oldtarget:
+                newdist = abs(target[0]-oldtarget[0])+abs(target[1]-oldtarget[1])+abs(target[2]-oldtarget[2])
+                #if the second closest nutrient is best reached from a tip other than origin, don't fork
+                if oldorigin != origin:
+                    fork = False
+                #if it's easier to reach the second closest nutrient from the target than from the tip that will approach the target, do not fork
+                if fork and (newdist-olddist < FORK_COST/ROOT_COST):
+                    print("newdist " + str(newdist) + " old dist " + str(olddist))
+                    fork = False
+            else:
+                #if there is only 1 nutrient known, do not fork
+                fork = False
+
+        #accept sideways or backwards moves when moving toward the target is not possible
+        margin = 0
+        while len(newmoves)==0 and margin< 2 and self.rootSystem.energy>0:
+            margin += 1
+            if target:
+                for m in moves:
+                    if abs(m[1][0]-target[0])+abs(m[1][1]-target[1])+abs(m[1][2]-target[2]) < tdist+margin:
+                        newmoves.append(m)
+
+
+        if len(newmoves)==0: return
+            
+        move = random.choice(newmoves)
+        if fork: print("fork!")
+        self.rootSystem.addToTip(move[0],move[1], fork)
+
 class Window(pyglet.window.Window):
 
     def __init__(self, *args, **kwargs):
@@ -573,12 +637,12 @@ class Window(pyglet.window.Window):
         self.world = World()
 
         self.rootSystems = []
-        for i in range(2):
+        for i in range(1):
             self.rootSystems.append(RootSystem(self.world, (10*i,0,0) ))
 
         self.players = []
-        self.players.append(RandomPlayer(self.rootSystems[0], self))
-        self.players.append(GreedyPlayer(self.rootSystems[1], self))
+        #self.players.append(RandomPlayer(self.rootSystems[0], self))
+        self.players.append(GreedyForker(self.rootSystems[0], self))
 
         self.currentPlayerIndex = 0
 
@@ -649,7 +713,7 @@ class Window(pyglet.window.Window):
         for _ in xrange(m):
             self._update(dt / m)
         if (not isinstance(self.currentPlayer(), HumanPlayer)):
-            self.nextTurn()
+            for i in range(10): self.nextTurn()
 
     def _update(self, dt):
         """ Private implementation of the `update()` method. This is where most
