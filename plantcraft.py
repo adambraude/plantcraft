@@ -91,6 +91,8 @@ class World(object):
         # This defines all the blocks that are currently in the world.
         self.world = {}
 
+        self.nutrients = []
+
         # Same mapping as `world` but only contains blocks that are shown.
         self.shown = {}
 
@@ -117,41 +119,10 @@ class World(object):
             y = random.randint(-20,0)
             z = random.randint(-20,20)
             self.add_block((x, y, z), TEXTURES[4])
+            self.nutrients.append((x, y, z))
             if PROX:
                 self.hide_block((x, y, z))
 
-        if PROX:
-            for i in range(1, len(self.tipPositions)):
-                self.proxUpdate(self.tipPositions[i], self.tipPositions[i])
-
-    def proxUpdate(self, position, old_position):
-        x, y, z = position
-        x_old, y_old, z_old = old_position
-        if position == old_position:
-            for i in range(x-PROX_RANGE, x+PROX_RANGE + 1):
-                for j in range(y-PROX_RANGE, y+PROX_RANGE + 1):
-                    for k in range(z-PROX_RANGE, z+PROX_RANGE + 1):
-                        new_pos = (i, j, k)
-                        if new_pos in self.world and self.world[new_pos] == TEXTURES[4]:
-                            self.show_block(new_pos)
-        if x == x_old and y == y_old:
-            for i in range (x-PROX_RANGE, x+PROX_RANGE + 1):
-                for j in range (y-PROX_RANGE, y+PROX_RANGE + 1):
-                    new_pos = (i, j, z)
-                    if new_pos in self.world and self.world[new_pos] == TEXTURES[4]:
-                        self.show_block(new_pos)
-        elif y == y_old and z == z_old:
-            for j in range (y-PROX_RANGE, y+PROX_RANGE + 1):
-                for k in range (z-PROX_RANGE, z+PROX_RANGE + 1):
-                    new_pos = (x, j, k)
-                    if new_pos in self.world and self.world[new_pos] == TEXTURES[4]:
-                                    self.show_block(new_pos)
-        elif z == z_old and x == x_old:
-            for i in range (x-PROX_RANGE, x+PROX_RANGE + 1):
-                for k in range (z-PROX_RANGE, z+PROX_RANGE + 1):
-                    new_pos = (i, y, k)
-                    if new_pos in self.world and self.world[new_pos] == TEXTURES[4]:
-                        self.show_block(new_pos)
 
     @staticmethod
     def modByDirection(start, direc):
@@ -375,6 +346,7 @@ class RootSystem(object):
     def __init__(self, world, position):
 
         self.world = world
+        self.nutrients = []
 
         self.energy = INIT_ENERGY
         self.tipTex = TEXTURES[2]
@@ -396,6 +368,13 @@ class RootSystem(object):
         for i in range(1,len(self.tipPositions)):
             self.add_block(self.tipPositions[i], self.tipTex)
 
+        if PROX:
+            for i in range(1, len(self.tipPositions)):
+                self.proxUpdate(self.tipPositions[i], self.tipPositions[i])
+
+            for block in self.nutrients:
+                self.world.show_block(block)
+
         self.add_block((x,y,z), TEXTURES[0])
         for i in range(1,6):
             self.add_block((x,y+i,z), STALK_TEXTURE)
@@ -406,8 +385,9 @@ class RootSystem(object):
 
         # don't accept new positions that collide or are above ground
         if newTip in self.world.world:
-            if self.world.world[newTip] == TEXTURES[4]:
+            if newTip in self.world.nutrients:
                 self.energy+=ENERGY_REWARD
+                self.nutrients.remove(newTip)
             else: return False
 
         if newTip[1] > 0: return False
@@ -424,7 +404,48 @@ class RootSystem(object):
             #print(str(oldTip) +" -> " + str(newTip))
         if PROX:
             self.proxUpdate(newTip,oldTip)
+            for block in self.nutrients:
+                if block not in self.world.shown:
+                    self.world.show_block(block)
+
         return True
+
+    def proxUpdate(self, position, old_position):
+        x, y, z = position
+        x_old, y_old, z_old = old_position
+        # CASE: first update on game start, check the full range
+        if position == old_position:
+            for i in range(x-PROX_RANGE, x+PROX_RANGE + 1):
+                for j in range(y-PROX_RANGE, y+PROX_RANGE + 1):
+                    for k in range(z-PROX_RANGE, z+PROX_RANGE + 1):
+                        new_pos = (i, j, k)
+                        # show nutrients within initial range
+                        if new_pos in self.world.nutrients:
+                            self.nutrients.append(new_pos)
+        # CASE: root growth in z-axis, expand range
+        if x == x_old and y == y_old:
+            for i in range (x-PROX_RANGE, x+PROX_RANGE + 1):
+                for j in range (y-PROX_RANGE, y+PROX_RANGE + 1):
+                    new_pos = (i, j, z)
+                    # show nutrients that are now within range
+                    if new_pos in self.world.nutrients:
+                        self.nutrients.append(new_pos)
+        # CASE: root growth in x-axis, expand range
+        elif y == y_old and z == z_old:
+            for j in range (y-PROX_RANGE, y+PROX_RANGE + 1):
+                for k in range (z-PROX_RANGE, z+PROX_RANGE + 1):
+                    new_pos = (x, j, k)
+                    # show nutrients that are now within range
+                    if new_pos in self.world.nutrients:
+                        self.nutrients.append(new_pos)
+        # CASE: root growth in y-axis, expand range
+        elif z == z_old and x == x_old:
+            for i in range (x-PROX_RANGE, x+PROX_RANGE + 1):
+                for k in range (z-PROX_RANGE, z+PROX_RANGE + 1):
+                    new_pos = (i, y, k)
+                    # show nutrients that are now within range
+                    if new_pos in self.world.nutrients:
+                        self.nutrients.append(new_pos)
 
     def add_block(self, position, texture, immediate=True):
         """ Add a block with the given `texture` and `position` to the world.
