@@ -373,7 +373,8 @@ class RootSystem(object):
                 self.proxUpdate(self.tipPositions[i], self.tipPositions[i])
 
             for block in self.nutrients:
-                self.world.show_block(block)
+                if block not in self.world.shown:
+                    self.world.show_block(block)
 
         self.add_block((x,y,z), TEXTURES[0])
         for i in range(1,6):
