@@ -19,6 +19,8 @@ INIT_ENERGY = 500
 ROOT_COST = 10
 FORK_COST = 50
 ENERGY_REWARD = 100
+LOGENABLED = True
+LOG = ""
 
 TWODMODE = False
 
@@ -68,6 +70,11 @@ def calcTextureCoords(which, n=8):
     right = left+m - 0.001
     left += 0.001
     return 6*[left, 0, right, 0, right, 1, left, 1]
+
+def printLog(filename = "logfile"):
+    file = open(filename, "w")
+    file.write(LOG)
+    file.close()
 
 TEXTURES = (calcTextureCoords(1), calcTextureCoords(2), calcTextureCoords(3), calcTextureCoords(4), calcTextureCoords(5))
 STALK_TEXTURE = calcTextureCoords(0)
@@ -131,12 +138,15 @@ class World(object):
     	    bounds should be a 6-tuple (xmin,xmax,ymin,ymax,zmin,zmax)
 
     	"""
+    	global LOG
+    	if (LOGENABLED):LOG += "W";
     	xmin,xmax,ymin,ymax,zmin,zmax = bounds
     	for x in range(xmin,xmax):
             for y in range(ymin, ymax):
             	for z in range(zmin, zmax):
             		if random.random()<density and ((x,y,z) not in self.world):
             			self.add_block((x,y,z), TEXTURES[4])
+            			if (LOGENABLED):LOG += "(4," + str(x) + "," + str(y) + ","+ str(x) + ")";
 
 
     def exposed(self, position):
@@ -368,15 +378,20 @@ class RootSystem(object):
 
         """
         x,y,z = position
+        global LOG
+        if (LOGENABLED): LOG += "\n (R," + str(x)+ "," + str(y) + "," + str(z) + ",E:" + str(self.energy) + ")"
         self.tipPositions = [None, (x-1,y,z), (x+1,y,z), (x,y,z+1),(x,y,z-1)]
         for i in range(1,len(self.tipPositions)):
             self.add_block(self.tipPositions[i], self.tipTex)
+            if (LOGENABLED): LOG += "\n (T," + str(self.tipPositions[i][0])+ "," + str(self.tipPositions[i][1]) + "," + str(self.tipPositions[i][2]) + ")"
 
         self.add_block((x,y,z), TEXTURES[0])
         for i in range(1,6):
             self.add_block((x,y+i,z), STALK_TEXTURE)
+            if (LOGENABLED): LOG += "\n (S," + str(x)+ "," + str(y+i) + "," + str(z) + ")"
 
     def addToTip(self, oldTip, newTip, fork=False):
+        global LOG
         if (self.energy < ROOT_COST): return False
         if (fork and self.energy < FORK_COST): return False
 
@@ -395,6 +410,7 @@ class RootSystem(object):
             self.world.uncolorBlock(oldTip)
             del self.tips[oldTip]
         
+        if (LOGENABLED): LOG += "\n (" + str(fork) + "," + str(oldTip[0])+ "," + str(oldTip[1]) + "," + str(oldTip[2]) + "," + str(newTip[0])+ "," + str(newTip[1]) + "," + str(newTip[2]) + ",E:" + str(self.energy) + ")"
         self.add_block(newTip, self.tipTex)
         #self.tipPositions[whichTip] = newTip
             #print(str(oldTip) +" -> " + str(newTip))
@@ -710,6 +726,8 @@ class Window(pyglet.window.Window):
             self.motion[2] += 1
         elif symbol == key.ESCAPE:
             self.set_exclusive_mouse(False)
+        elif symbol == key.BACKSPACE:
+            printLog()
 
     def on_key_release(self, symbol, modifiers):
         """ Called when the player releases a key. See pyglet docs for key
