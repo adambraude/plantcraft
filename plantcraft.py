@@ -4,6 +4,7 @@ import sys
 import math
 import random
 import time
+import re
 
 from collections import deque
 from pyglet import image
@@ -21,6 +22,9 @@ FORK_COST = 50
 ENERGY_REWARD = 100
 LOGENABLED = True
 LOG = ""
+
+REPLAY = True
+REPLAY_FILE = "logfile"
 
 TWODMODE = False
 
@@ -118,6 +122,7 @@ class World(object):
         """ Initialize the world by placing all the blocks.
 
         """
+        if REPLAY: return
         if TWODMODE:
             self.addNutrients(0.1, (-40, 40, 0, 1, -40, 40))
             return
@@ -146,7 +151,7 @@ class World(object):
             	for z in range(zmin, zmax):
             		if random.random()<density and ((x,y,z) not in self.world):
             			self.add_block((x,y,z), TEXTURES[4])
-            			if (LOGENABLED):LOG += "(4," + str(x) + "," + str(y) + ","+ str(x) + ")";
+            			if (LOGENABLED):LOG += "(4," + str(x) + "," + str(y) + ","+ str(z) + ")\n";
 
 
     def exposed(self, position):
@@ -545,6 +550,16 @@ class Window(pyglet.window.Window):
 
         # Instance of the model that handles the world.
         self.world = World()
+        if REPLAY:
+            file = open(REPLAY_FILE, "r")
+            LOG = file.read()
+            moves = re.split("[(),\n\s]+", LOG)
+            print(moves)
+            pos = 0
+            file.close()
+            for i in range(1,len(moves),4):
+                if moves[i] == "R": break
+                self.world.add_block((int(moves[i+1]),int(moves[i+2]),int(moves[i+3])), TEXTURES[int(moves[i])])
 
         self.rootSystems = []
         for i in range(2):
