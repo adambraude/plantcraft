@@ -21,6 +21,7 @@ ROOT_COST = 10
 FORK_COST = 50
 ENERGY_REWARD = 100
 LOGENABLED = True
+LOGNUTRIENTSTART = True
 LOG = ""
 
 REPLAY = True
@@ -144,14 +145,14 @@ class World(object):
 
     	"""
     	global LOG
-    	if (LOGENABLED):LOG += "W";
+    	if (LOGENABLED and LOGNUTRIENTSTART):LOG += "W";
     	xmin,xmax,ymin,ymax,zmin,zmax = bounds
     	for x in range(xmin,xmax):
             for y in range(ymin, ymax):
             	for z in range(zmin, zmax):
             		if random.random()<density and ((x,y,z) not in self.world):
             			self.add_block((x,y,z), TEXTURES[4])
-            			if (LOGENABLED):LOG += "(4," + str(x) + "," + str(y) + ","+ str(z) + ")\n";
+            			if (LOGENABLED and LOGNUTRIENTSTART):LOG += "(4," + str(x) + "," + str(y) + ","+ str(z) + ")\n";
 
 
     def exposed(self, position):
