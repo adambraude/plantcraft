@@ -376,7 +376,7 @@ class RootSystem(object):
         self.blocks = {}
         self.tips = {}
 
-        self._initialize(position)
+        if (not REPLAY): self._initialize(position)
 
 
     def _initialize(self, position):
@@ -556,19 +556,46 @@ class Window(pyglet.window.Window):
             LOG = file.read()
             moves = re.split("[(),\n\s]+", LOG)
             print(moves)
-            pos = 0
+            self.pos = 0
+            while (moves[self.pos] !=  "W"): self.pos+= 1
+            self.pos += 1
             file.close()
-            for i in range(1,len(moves),4):
+            for i in range(self.pos,len(moves),4):
                 if moves[i] == "R": break
+                #place nutrients
                 self.world.add_block((int(moves[i+1]),int(moves[i+2]),int(moves[i+3])), TEXTURES[int(moves[i])])
+                self.pos = i
 
         self.rootSystems = []
-        for i in range(2):
-            self.rootSystems.append(RootSystem(self.world, (10*i,0,0) ))
-
         self.players = []
-        self.players.append(RandomPlayer(self.rootSystems[0], self))
-        self.players.append(RandomPlayer(self.rootSystems[1], self))
+
+        if (REPLAY):
+            while (moves[self.pos] != "True" and moves[self.pos] != "False"):
+                if (moves[self.pos] == "R"):
+                    rip = RootSystem(self.world, (moves[self.pos+1],moves[self.pos+2],moves[self.pos+3]))
+                    rip.energy = int(moves[self.pos+4][2:])
+                    self.rootSystems.append(rip)
+                    self.players.append(Player(self.rootSystems[len(self.rootSystems)-1], self))
+                    self.pos += 5
+                elif (moves[self.pos] == "T"):
+                    rip.add_block((int(moves[self.pos+1]),int(moves[self.pos+2]),int(moves[self.pos+3])),rip.tipTex)
+                    self.pos += 4
+                elif (moves[self.pos] == "S"):
+                    rip.add_block((int(moves[self.pos+1]),int(moves[self.pos+2]),int(moves[self.pos+3])),STALK_TEXTURE)
+                    self.pos += 4
+                elif (moves[self.pos] == "B"):
+                    rip.add_block((int(moves[self.pos+1]),int(moves[self.pos+2]),int(moves[self.pos+3]),TEXTURES[0]))
+                    self.pos += 4
+                else:
+                    self.pos += 1
+        else:
+            for i in range(2):
+                self.rootSystems.append(RootSystem(self.world, (10*i,0,0) ))
+        
+
+        if (not REPLAY):
+            self.players.append(RandomPlayer(self.rootSystems[0], self))
+            self.players.append(RandomPlayer(self.rootSystems[1], self))
 
         self.currentPlayerIndex = 0
 
