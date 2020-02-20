@@ -598,6 +598,9 @@ class Window(pyglet.window.Window):
             self.players.append(RandomPlayer(self.rootSystems[1], self))
 
         self.currentPlayerIndex = 0
+        #drop all the already-read moves from memory.
+        self.moves = moves[self.pos:]
+        self.pos = 0
 
         self.positionLabel = pyglet.text.Label('', font_name="Arial", font_size=18, x=self.width/2, 
                                         anchor_x='center', y=self.height-10, anchor_y='top', 
@@ -616,10 +619,24 @@ class Window(pyglet.window.Window):
         self.currentPlayer().takeTurn()
 
     def nextTurn(self):
-        self.currentPlayerIndex += 1
-        if self.currentPlayerIndex >= len(self.players):
-            self.currentPlayerIndex = 0
-        self.players[self.currentPlayerIndex].takeTurn()
+        
+        if (REPLAY):
+            if self.pos >= len(self.moves): return
+            while(self.moves[self.pos] != "True" and self.moves[self.pos] != "False"):
+                self.pos += 1
+                if self.pos >= len(self.moves): return
+            if self.moves[self.pos] == "True": fork = True
+            else: fork = False
+            self.players[self.currentPlayerIndex].rootSystem.addToTip((int(self.moves[self.pos+1]),int(self.moves[self.pos+2]),int(self.moves[self.pos+3])),(int(self.moves[self.pos+4]),int(self.moves[self.pos+5]),int(self.moves[self.pos+6])),fork)
+            self.pos +=7
+            self.currentPlayerIndex += 1
+            if self.currentPlayerIndex >= len(self.players):
+                self.currentPlayerIndex = 0
+        else:
+            self.currentPlayerIndex += 1
+            if self.currentPlayerIndex >= len(self.players):
+                self.currentPlayerIndex = 0
+            self.players[self.currentPlayerIndex].takeTurn()
 
     def currentPlayer(self):
         return self.players[self.currentPlayerIndex]
