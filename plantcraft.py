@@ -520,6 +520,11 @@ class RandomPlayer(Player):
 class Window(pyglet.window.Window):
 
     def __init__(self, *args, **kwargs):
+        global LOG
+        global INIT_ENERGY
+        global ROOT_COST
+        global FORK_COST
+        global ENERGY_REWARD
         super(Window, self).__init__(*args, **kwargs)
 
         # Whether or not the window exclusively captures the mouse.
@@ -549,6 +554,11 @@ class Window(pyglet.window.Window):
         # Velocity in the y (upward) direction.
         self.dy = 0
 
+        if not REPLAY:
+            LOG += "(IE:" + str(INIT_ENERGY) + ")\n"
+            LOG += "(RC:" + str(ROOT_COST) + ")\n"
+            LOG += "(FC:" + str(FORK_COST) + ")\n"
+            LOG += "(ER:" + str(ENERGY_REWARD) + ")\n"
         # Instance of the model that handles the world.
         self.world = World()
         if REPLAY:
@@ -557,7 +567,13 @@ class Window(pyglet.window.Window):
             moves = re.split("[(),\n\s]+", LOG)
             print(moves)
             self.pos = 0
-            while (moves[self.pos] !=  "W"): self.pos+= 1
+            while (moves[self.pos] !=  "W"): 
+                pre = moves[self.pos][:2]
+                if (pre == "IE"): INIT_ENERGY = int(moves[self.pos][3:])
+                elif (pre == "RC"): ROOT_COST = int(moves[self.pos][3:])
+                elif (pre == "FC"): FORK_COST = int(moves[self.pos][3:])
+                elif (pre == "ER"): ENERGY_REWARD = int(moves[self.pos][3:])
+                self.pos+= 1
             self.pos += 1
             file.close()
             for i in range(self.pos,len(moves),4):
@@ -565,7 +581,6 @@ class Window(pyglet.window.Window):
                 #place nutrients
                 self.world.add_block((int(moves[i+1]),int(moves[i+2]),int(moves[i+3])), TEXTURES[int(moves[i])])
                 self.pos = i
-
         self.rootSystems = []
         self.players = []
 
@@ -599,7 +614,7 @@ class Window(pyglet.window.Window):
 
         self.currentPlayerIndex = 0
         #drop all the already-read moves from memory.
-        self.moves = moves[self.pos:]
+        if REPLAY: self.moves = moves[self.pos:]
         self.pos = 0
 
         self.positionLabel = pyglet.text.Label('', font_name="Arial", font_size=18, x=self.width/2, 
