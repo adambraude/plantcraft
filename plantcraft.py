@@ -10,6 +10,11 @@ from pyglet import image
 from pyglet.gl import *
 from pyglet.graphics import TextureGroup
 from pyglet.window import key, mouse
+import welcome
+#[player1, player2, [density, proximity?, prox distance, graphics mode]]
+#['Human Player', 'None', [28.0, False, 5.0, '3D mode']]
+
+all_settings = welcome.main()
 
 TICKS_PER_SEC = 60
 
@@ -19,14 +24,26 @@ INIT_ENERGY = 500
 ROOT_COST = 10
 FORK_COST = 50
 ENERGY_REWARD = 100
+DENSITY = int(all_settings[2][0])
+if all_settings[2][3] == '2D mode':
+    TWODMODE = True
+else:
+    TWODMODE = False
 
-TWODMODE = False
 
 DEGREES= u'\N{DEGREE SIGN}'
 DIRECTIONS = (key.N, key.S, key.W, key.E, key.U, key.D)
 NUM_KEYS = (key._1, key._2, key._3, key._4, key._5, key._6, key._7, key._8, key._9, key._0)
 
 TEXTURE_PATH = "roots.png"
+
+#def adjust_settings(settings, TWODMODE):
+#    if settings[2][3] == '2D mode':
+ #       TWODMODE = True
+    #else:
+        #TWODMODE = False
+        #print(TWODMODE)
+    
 
 def normalize(position):
     """ Accepts `position` of arbitrary precision and returns the block
@@ -79,8 +96,9 @@ LATFACES = [(-1, 0, 0), ( 1, 0, 0), ( 0, 0, 1), ( 0, 0,-1)]
 
 class World(object):
 
-    def __init__(self):
+    def __init__(self, mode):
 
+        self.mode = mode
         # A Batch is a collection of vertex lists for batched rendering.
         self.batch = pyglet.graphics.Batch()
 
@@ -107,12 +125,18 @@ class World(object):
         self._initialize()
 
 
-    def _initialize(self):
+    def _initialize(self):  # take a parameter for nutrient density
         """ Initialize the world by placing all the blocks.
 
         """
-        if TWODMODE:
-            for i in range(1,1000):
+        # print('using mode here')
+        # print(TWODMODE)
+        print(self.mode)
+        if self.mode:
+            dens = DENSITY*37
+            #if DENSITY == 100:
+            #    dens = 3722
+            for i in range(dens):     # nutrient density for 2d mode
                 x=random.randint(-30,30)
                 z=random.randint(-30,30)
                 while (x,0,z) in self.world:
@@ -120,7 +144,7 @@ class World(object):
                    z=random.randint(-30,30)
                 self.add_block((x,0,z), TEXTURES[4])
             return
-        for i in range(1,100):
+        for i in range(DENSITY*DENSITY*6):#0):#60000):      # nutrient density for 3d mode
             self.add_block((random.randint(-20,20), random.randint(-20,0),random.randint(-20,20)), TEXTURES[4])
 
     @staticmethod
@@ -522,7 +546,8 @@ class Window(pyglet.window.Window):
         self.dy = 0
 
         # Instance of the model that handles the world.
-        self.world = World()
+        print(TWODMODE)
+        self.world = World(TWODMODE)
 
         self.rootSystems = []
         for i in range(2):
@@ -549,6 +574,7 @@ class Window(pyglet.window.Window):
         # TICKS_PER_SEC. This is the main game event loop.
         pyglet.clock.schedule_interval(self.update, 1.0 / TICKS_PER_SEC)
         self.currentPlayer().takeTurn()
+        #self.alive = 1
 
     def nextTurn(self):
         self.currentPlayerIndex += 1
@@ -827,6 +853,12 @@ class Window(pyglet.window.Window):
 
         self.energyLabel.text = "Energy remaining: %d" % (self.rootSystems[self.currentPlayerIndex].energy)
         self.energyLabel.draw()
+        
+    def on_close(self):
+     #   print('trying to close')
+         pyglet.app.exit()
+         
+     #   return 0
 
 def setup_fog():
     """ Configure the OpenGL fog properties.
@@ -868,12 +900,26 @@ def setup():
     setup_fog()
 
 
-def main():
+def main(settings=None):
+    # print(settings)
+    #SETTINGS = settings
+    
+    #if settings[2][3] == '2D mode':
+     #   print(settings[2][3])
+     #   TWODMODE = True
+        
+    #adjust_settings(settings, TWODMODE) 
+    #print(TWODMODE)
+    
     window = Window(width=800, height=600, caption='PlantCraft', resizable=True)
     # Hide the mouse cursor and prevent the mouse from leaving the window.
     window.set_exclusive_mouse(True)
     setup()
     pyglet.app.run()
+    window.close()
+    return 0
+    #print('returning zero')
+    #return 0
 
 
 if __name__ == '__main__':

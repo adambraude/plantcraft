@@ -7,10 +7,10 @@ Created on Thu Jan 30 16:02:27 2020
 import pyglet
 from pyglet.gl import gl 
 import PySimpleGUI as sg # for the interactive pop-ups
-import plantcraft
+# import plantcraft
 
-# a list holding all of the settings thus far: [Player1, Player2, [density, visibility]]
-all_settings = ['Human Player', 'None', [28.0, 5.0]]
+# a list holding all of the settings thus far: [Player1, Player2, [density, proximity?, visibility, gamemode]]
+all_settings = ['Human Player', 'None', [10.0, False, 5.0, '3D mode']]
 
 
 # The pop-up window with a drop-down menu for selecting player 1's type
@@ -48,13 +48,22 @@ def _player2():
 def _settings():    
     sg.theme('DarkGreen')
     layout = [
-            [sg.Text('Nutrient Settings', size=(30, 1), justification='center', font=("Impact", 25))],
+            [sg.Text('Game Settings', size=(30, 1), justification='center', font=("Impact", 25))],
 
-            [sg.Text('Select nutrient density... (10 ==> 10% of blocks are nutrients)', font=("Helvetica", 10))],
-            [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 28)],
+            [sg.Text('Select nutrient density... (10 ==> ~10% of blocks are nutrients)', font=("Helvetica", 10))],
+            [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 10)],
             
-            [sg.Text('Select nutrient visibility... (how many blocks away do nutrient become visible)', font=("Helvetica", 10))],
+            # Allow nutrient proximity?
+            [sg.Text('Allow proximity visibility?', font=("Helvetica", 10))],
+            [sg.Checkbox('Proximity on', size=(10,1), default=False)],
+            # [sg.Radio('Proximity on     ', "Selected proximity", default=True, size=(10,1)), sg.Radio('Proximity off', "off")],
+            
+            [sg.Text('Select nutrient visibility... (how many blocks away do nutrient become visible?)', font=("Helvetica", 10))],
             [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 5)],
+            
+            #2D mode
+            [sg.Text('Select a graphics mode...', font=("Helvetica", 10))],
+            [sg.InputCombo(('3D mode', '2D mode', 'No graphics'), size=(35, 10))],
             
             [sg.Submit(tooltip='Click to submit this window'), sg.Cancel()] 
             ]
@@ -64,7 +73,7 @@ def _settings():
     event, values = window.read()
     window.close()
     if event[0] == 'S':
-        return [values[0], values[1]] #make a list of all the items to return
+        return [values[0], values[1], values[2], values[3]] #make a list of all the items to return
     
 
 # =============================================================================
@@ -134,8 +143,8 @@ class Mainscreen(pyglet.window.Window):
     
     # closes the window via the top-right corner "X"
     def on_close(self):
-        print("trying to close")
-        self.alive = 0
+        exit()
+        
     
     # interact with the buttons via clicking, uses the Button click()
     def on_mouse_press(self, x, y, button, modifiers):
@@ -147,11 +156,11 @@ class Mainscreen(pyglet.window.Window):
                     all_settings[1] = _player2()
                 elif item is 'Settings':
                     all_settings[2] = _settings()
-                else:
+                elif item is 'Play':
                     print("The selected settings are: "+str(all_settings))
-                    #self.alive = 0
-                    plantcraft.main()   # seems as though once this line is ran, that the run() method of the window is halted somehow
-                    #self.run()
+                    self.alive = 0
+                    #return all_settings    #return the selected settings
+                    
                     
                     # Game will start when this area is reached
                     #Begin Game passes the information to the program to initialize the appropriate version of the game
@@ -161,9 +170,11 @@ class Mainscreen(pyglet.window.Window):
         while self.alive == 1:
             self.on_draw()
             event = self.dispatch_events()
-            
-window = Mainscreen()   #make a complete instance of a window
-window.run()    # essentially pyglet.app.run()
+        return all_settings
+    
+def main():           
+    window = Mainscreen()   #make a complete instance of a window
+    return window.run()    # essentially pyglet.app.run()
 
 #EXPLORE, EXPLOIT, EXPAND, EXTERMINATE
     
