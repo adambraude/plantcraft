@@ -597,7 +597,6 @@ class GreedyForker(Player):
                     fork = False
                 #if it's easier to reach the second closest nutrient from the target than from the tip that will approach the target, do not fork
                 if fork and (newdist-olddist < FORK_COST/ROOT_COST):
-                    print("newdist " + str(newdist) + " old dist " + str(olddist))
                     fork = False
             else:
                 #if there is only 1 nutrient known, do not fork
@@ -616,7 +615,6 @@ class GreedyForker(Player):
         if len(newmoves)==0: return
             
         move = random.choice(newmoves)
-        if fork: print("fork!")
         self.rootSystem.addToTip(move[0],move[1], fork)
 
 class Window(pyglet.window.Window):
@@ -733,7 +731,7 @@ class Window(pyglet.window.Window):
         for _ in xrange(m):
             self._update(dt / m)
         if (not isinstance(self.currentPlayer(), HumanPlayer)):
-            for i in range(10): self.nextTurn()
+            self.nextTurn()
 
     def _update(self, dt):
         """ Private implementation of the `update()` method. This is where most
