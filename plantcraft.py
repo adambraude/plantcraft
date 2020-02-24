@@ -10,6 +10,11 @@ from pyglet import image
 from pyglet.gl import *
 from pyglet.graphics import TextureGroup
 from pyglet.window import key, mouse
+import welcome
+#[player1, player2, [density, proximity?, prox distance, graphics mode]]
+#['Human Player', 'None', [28.0, False, 5.0, '3D mode']]
+
+all_settings = welcome.main()
 
 TICKS_PER_SEC = 60
 
@@ -19,14 +24,26 @@ INIT_ENERGY = 500
 ROOT_COST = 10
 FORK_COST = 50
 ENERGY_REWARD = 100
+DENSITY = int(all_settings[2][0])
+if all_settings[2][3] == '2D mode':
+    TWODMODE = True
+else:
+    TWODMODE = False
 
-TWODMODE = False
 
 DEGREES= u'\N{DEGREE SIGN}'
 DIRECTIONS = (key.N, key.S, key.W, key.E, key.U, key.D)
 NUM_KEYS = (key._1, key._2, key._3, key._4, key._5, key._6, key._7, key._8, key._9, key._0)
 
 TEXTURE_PATH = "roots.png"
+
+#def adjust_settings(settings, TWODMODE):
+#    if settings[2][3] == '2D mode':
+ #       TWODMODE = True
+    #else:
+        #TWODMODE = False
+        #print(TWODMODE)
+    
 
 def normalize(position):
     """ Accepts `position` of arbitrary precision and returns the block
@@ -79,8 +96,9 @@ LATFACES = [(-1, 0, 0), ( 1, 0, 0), ( 0, 0, 1), ( 0, 0,-1)]
 
 class World(object):
 
-    def __init__(self):
+    def __init__(self, mode):
 
+        self.mode = mode
         # A Batch is a collection of vertex lists for batched rendering.
         self.batch = pyglet.graphics.Batch()
 
@@ -107,14 +125,14 @@ class World(object):
         self._initialize()
 
 
-    def _initialize(self):
+    def _initialize(self):  # take a parameter for nutrient density
         """ Initialize the world by placing all the blocks.
 
         """
-        if TWODMODE:
-            self.addNutrients(0.1, (-40, 40, 0, 1, -40, 40))
-            return
-        self.addNutrients(0.005, (-20, 20, -40, 0, -20, 20))
+        if self.mode:
+            self.addNutrients(DENSITY/100, (-40, 40, 0, 1, -40, 40))
+        else:
+            self.addNutrients(DENSITY/100, (-20, 20, -20, 0, -20, 20))
 
     @staticmethod
     def modByDirection(start, direc):
@@ -634,7 +652,8 @@ class Window(pyglet.window.Window):
         self.dy = 0
 
         # Instance of the model that handles the world.
-        self.world = World()
+        print(TWODMODE)
+        self.world = World(TWODMODE)
 
         self.rootSystems = []
         for i in range(1):
@@ -661,6 +680,7 @@ class Window(pyglet.window.Window):
         # TICKS_PER_SEC. This is the main game event loop.
         pyglet.clock.schedule_interval(self.update, 1.0 / TICKS_PER_SEC)
         self.currentPlayer().takeTurn()
+        #self.alive = 1
 
     def nextTurn(self):
         self.currentPlayerIndex += 1
@@ -939,6 +959,12 @@ class Window(pyglet.window.Window):
 
         self.energyLabel.text = "Energy remaining: %d" % (self.rootSystems[self.currentPlayerIndex].energy)
         self.energyLabel.draw()
+        
+    def on_close(self):
+     #   print('trying to close')
+         pyglet.app.exit()
+         
+     #   return 0
 
 def setup_fog():
     """ Configure the OpenGL fog properties.
@@ -980,12 +1006,26 @@ def setup():
     setup_fog()
 
 
-def main():
+def main(settings=None):
+    # print(settings)
+    #SETTINGS = settings
+    
+    #if settings[2][3] == '2D mode':
+     #   print(settings[2][3])
+     #   TWODMODE = True
+        
+    #adjust_settings(settings, TWODMODE) 
+    #print(TWODMODE)
+    
     window = Window(width=800, height=600, caption='PlantCraft', resizable=True)
     # Hide the mouse cursor and prevent the mouse from leaving the window.
     window.set_exclusive_mouse(True)
     setup()
     pyglet.app.run()
+    window.close()
+    return 0
+    #print('returning zero')
+    #return 0
 
 
 if __name__ == '__main__':
