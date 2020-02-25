@@ -21,6 +21,9 @@ TICKS_PER_SEC = 60
 
 SPEED = 15
 
+PROX = True
+PROX_RANGE = 5
+
 INIT_ENERGY = 500
 ROOT_COST = 10
 FORK_COST = 50
@@ -34,7 +37,7 @@ LOGENABLED = True
 LOGNUTRIENTSTART = True
 LOG = ""
 
-REPLAY = True
+REPLAY = False
 REPLAY_FILE = "logfile"
 
 
@@ -121,6 +124,8 @@ class World(object):
         # This defines all the blocks that are currently in the world.
         self.world = {}
 
+        self.nutrients = []
+
         # Same mapping as `world` but only contains blocks that are shown.
         self.shown = {}
 
@@ -170,6 +175,8 @@ class World(object):
                 for z in range(zmin, zmax):
                     if random.random()<density and ((x,y,z) not in self.world):
                         self.add_block((x,y,z), TEXTURES[4])
+                        if PROX:
+                            self.hide_block((x, y, z))
                         if (LOGENABLED and LOGNUTRIENTSTART):LOG += "(4," + str(x) + "," + str(y) + ","+ str(z) + ")\n";
 
 
@@ -218,7 +225,7 @@ class World(object):
             if immediate:
                 self.hide_block(position)
                 self.show_block(position)
-            
+
     def remove_block(self, position, immediate=True):
         """ Remove the block at the given `position`.
 
@@ -385,7 +392,8 @@ class RootSystem(object):
     def __init__(self, world, position):
 
         self.world = world
-        
+        self.nutrients = []
+
         self.energy = INIT_ENERGY
         self.tipTex = TEXTURES[2]
 
@@ -409,6 +417,14 @@ class RootSystem(object):
             self.add_block(self.tipPositions[i], self.tipTex)
             if (LOGENABLED): LOG += "\n (T," + str(self.tipPositions[i][0])+ "," + str(self.tipPositions[i][1]) + "," + str(self.tipPositions[i][2]) + ")"
 
+        if PROX:
+            for i in range(1, len(self.tipPositions)):
+                self.proxUpdate(self.tipPositions[i], self.tipPositions[i])
+
+            for block in self.nutrients:
+                if block not in self.world.shown:
+                    self.world.show_block(block)
+
         self.add_block((x,y,z), TEXTURES[0])
         for i in range(1,6):
             self.add_block((x,y+i,z), STALK_TEXTURE)
@@ -421,24 +437,68 @@ class RootSystem(object):
 
         # don't accept new positions that collide or are above ground
         if newTip in self.world.world:
-            if self.world.world[newTip] == TEXTURES[4]:
+            if newTip in self.world.nutrients:
                 self.energy+=ENERGY_REWARD
+                self.nutrients.remove(newTip)
             else: return False
-        #if newTip in self.world: return False
+
         if newTip[1] > 0: return False
-        
+
         if (fork): self.energy -= FORK_COST
         else: self.energy -= ROOT_COST
 
         if (not fork):
             self.world.uncolorBlock(oldTip)
             del self.tips[oldTip]
-        
         if (LOGENABLED): LOG += "\n (" + str(fork) + "," + str(oldTip[0])+ "," + str(oldTip[1]) + "," + str(oldTip[2]) + "," + str(newTip[0])+ "," + str(newTip[1]) + "," + str(newTip[2]) + ",E:" + str(self.energy) + ")"
+
         self.add_block(newTip, self.tipTex)
         #self.tipPositions[whichTip] = newTip
             #print(str(oldTip) +" -> " + str(newTip))
+        if PROX:
+            self.proxUpdate(newTip,oldTip)
+            for block in self.nutrients:
+                if block not in self.world.shown:
+                    self.world.show_block(block)
+
         return True
+
+    def proxUpdate(self, position, old_position):
+        x, y, z = position
+        x_old, y_old, z_old = old_position
+        # CASE: first update on game start, check the full range
+        if position == old_position:
+            for i in range(x-PROX_RANGE, x+PROX_RANGE + 1):
+                for j in range(y-PROX_RANGE, y+PROX_RANGE + 1):
+                    for k in range(z-PROX_RANGE, z+PROX_RANGE + 1):
+                        new_pos = (i, j, k)
+                        # show nutrients within initial range
+                        if new_pos in self.world.nutrients:
+                            self.nutrients.append(new_pos)
+        # CASE: root growth in z-axis, expand range
+        if x == x_old and y == y_old:
+            for i in range (x-PROX_RANGE, x+PROX_RANGE + 1):
+                for j in range (y-PROX_RANGE, y+PROX_RANGE + 1):
+                    new_pos = (i, j, z)
+                    # show nutrients that are now within range
+                    if new_pos in self.world.nutrients:
+                        self.nutrients.append(new_pos)
+        # CASE: root growth in x-axis, expand range
+        elif y == y_old and z == z_old:
+            for j in range (y-PROX_RANGE, y+PROX_RANGE + 1):
+                for k in range (z-PROX_RANGE, z+PROX_RANGE + 1):
+                    new_pos = (x, j, k)
+                    # show nutrients that are now within range
+                    if new_pos in self.world.nutrients:
+                        self.nutrients.append(new_pos)
+        # CASE: root growth in y-axis, expand range
+        elif z == z_old and x == x_old:
+            for i in range (x-PROX_RANGE, x+PROX_RANGE + 1):
+                for k in range (z-PROX_RANGE, z+PROX_RANGE + 1):
+                    new_pos = (i, y, k)
+                    # show nutrients that are now within range
+                    if new_pos in self.world.nutrients:
+                        self.nutrients.append(new_pos)
 
     def add_block(self, position, texture, immediate=True):
         """ Add a block with the given `texture` and `position` to the world.
@@ -474,7 +534,7 @@ class RootSystem(object):
             self.tips[tip] = free
                     
         return moves
-            
+
     def remove_block(self, position, immediate=True):
         """ Remove the block at the given `position`.
 
@@ -728,7 +788,7 @@ class Window(pyglet.window.Window):
         else:
             for i in range(2):
                 self.rootSystems.append(RootSystem(self.world, (10*i,0,0) ))
-            self.players.append(RandomPlayer(self.rootSystems[0], self))
+            self.players.append(HumanPlayer(self.rootSystems[0], self))
             self.players.append(RandomPlayer(self.rootSystems[1], self))
 
         self.currentPlayerIndex = -1
@@ -736,15 +796,15 @@ class Window(pyglet.window.Window):
         if REPLAY: self.moves = moves[self.pos:]
         self.pos = 0
 
-        self.positionLabel = pyglet.text.Label('', font_name="Arial", font_size=18, x=self.width/2, 
-                                        anchor_x='center', y=self.height-10, anchor_y='top', 
-                                        color=(255,255,255,255))
+        self.positionLabel = pyglet.text.Label('', font_name="Arial", font_size=18, x=self.width/2,
+                                               anchor_x='center', y=self.height-10, anchor_y='top',
+                                               color=(255,255,255,255))
 
-        self.controlsLabel = pyglet.text.Label("", font_name="Arial", font_size=18, x=self.width/4, 
-                                             anchor_x="center", y=10, anchor_y="bottom", color=(255,255,255,255))
+        self.controlsLabel = pyglet.text.Label("", font_name="Arial", font_size=18, x=self.width/4,
+                                               anchor_x="center", y=10, anchor_y="bottom", color=(255,255,255,255))
         self.controlsLabel.text = "l-grow r-fork"
 
-        self.energyLabel = pyglet.text.Label("", font_name="Arial", font_size=18, x=self.width/5, 
+        self.energyLabel = pyglet.text.Label("", font_name="Arial", font_size=18, x=self.width/5,
                                              anchor_x="center", y=self.height-10, anchor_y="top", color=(255,0,0,255))
 
         # This call schedules the `update()` method to be called
@@ -839,7 +899,7 @@ class Window(pyglet.window.Window):
         z += dx*math.sin(theta) + dz*math.cos(theta)
         self.position = (x, y, z)
 
-        
+
 
     def on_mouse_press(self, x, y, button, modifiers):
         """ Called when a mouse button is pressed. See pyglet docs for button
