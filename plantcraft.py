@@ -731,7 +731,7 @@ class Window(pyglet.window.Window):
             self.players.append(RandomPlayer(self.rootSystems[0], self))
             self.players.append(RandomPlayer(self.rootSystems[1], self))
 
-        self.currentPlayerIndex = 0
+        self.currentPlayerIndex = -1
         #drop all the already-read moves from memory.
         if REPLAY: self.moves = moves[self.pos:]
         self.pos = 0
@@ -750,7 +750,7 @@ class Window(pyglet.window.Window):
         # This call schedules the `update()` method to be called
         # TICKS_PER_SEC. This is the main game event loop.
         pyglet.clock.schedule_interval(self.update, 1.0 / TICKS_PER_SEC)
-        self.currentPlayer().takeTurn()
+        self.nextTurn()
         #self.alive = 1
 
     def nextTurn(self):
@@ -762,16 +762,15 @@ class Window(pyglet.window.Window):
                 if self.pos >= len(self.moves): return
             if self.moves[self.pos] == "True": fork = True
             else: fork = False
-            self.players[self.currentPlayerIndex].rootSystem.addToTip((int(self.moves[self.pos+1]),int(self.moves[self.pos+2]),int(self.moves[self.pos+3])),(int(self.moves[self.pos+4]),int(self.moves[self.pos+5]),int(self.moves[self.pos+6])),fork)
-            self.pos +=7
-            self.currentPlayerIndex += 1
-            if self.currentPlayerIndex >= len(self.players):
-                self.currentPlayerIndex = 0
+            self.players[int(self.moves[self.pos+8])].rootSystem.addToTip((int(self.moves[self.pos+1]),int(self.moves[self.pos+2]),int(self.moves[self.pos+3])),(int(self.moves[self.pos+4]),int(self.moves[self.pos+5]),int(self.moves[self.pos+6])),fork)
+            self.pos +=8
         else:
             self.currentPlayerIndex += 1
             if self.currentPlayerIndex >= len(self.players):
                 self.currentPlayerIndex = 0
             self.players[self.currentPlayerIndex].takeTurn()
+            global LOG
+            if (LOGENABLED): LOG += "(" + str(self.currentPlayerIndex) + ")"
 
     def currentPlayer(self):
         return self.players[self.currentPlayerIndex]
