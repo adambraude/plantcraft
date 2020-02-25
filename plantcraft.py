@@ -479,7 +479,10 @@ class RootSystem(object):
         if x == x_old and y == y_old:
             for i in range (x-PROX_RANGE, x+PROX_RANGE + 1):
                 for j in range (y-PROX_RANGE, y+PROX_RANGE + 1):
-                    new_pos = (i, j, z)
+                    if z - z_old > 0:
+                        new_pos = (i, j, z+PROX_RANGE)
+                    else:
+                        new_pos = (i, j, z-PROX_RANGE)
                     # show nutrients that are now within range
                     if new_pos in self.world.nutrients:
                         self.nutrients.append(new_pos)
@@ -487,7 +490,10 @@ class RootSystem(object):
         elif y == y_old and z == z_old:
             for j in range (y-PROX_RANGE, y+PROX_RANGE + 1):
                 for k in range (z-PROX_RANGE, z+PROX_RANGE + 1):
-                    new_pos = (x, j, k)
+                    if x - x_old > 0:
+                        new_pos = (x+PROX_RANGE, j, k)
+                    else:
+                        new_pos = (x-PROX_RANGE, j, k)
                     # show nutrients that are now within range
                     if new_pos in self.world.nutrients:
                         self.nutrients.append(new_pos)
@@ -495,7 +501,10 @@ class RootSystem(object):
         elif z == z_old and x == x_old:
             for i in range (x-PROX_RANGE, x+PROX_RANGE + 1):
                 for k in range (z-PROX_RANGE, z+PROX_RANGE + 1):
-                    new_pos = (i, y, k)
+                    if y - y_old > 0:
+                        new_pos = (i, y+PROX_RANGE, k)
+                    else:
+                        new_pos = (i, y-PROX_RANGE, k)
                     # show nutrients that are now within range
                     if new_pos in self.world.nutrients:
                         self.nutrients.append(new_pos)
