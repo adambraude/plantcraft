@@ -23,6 +23,8 @@ ROOT_COST = 10
 FORK_COST = 50
 ENERGY_REWARD = 100
 
+TWODMODE = False
+
 DEGREES= u'\N{DEGREE SIGN}'
 DIRECTIONS = (key.N, key.S, key.W, key.E, key.U, key.D)
 NUM_KEYS = (key._1, key._2, key._3, key._4, key._5, key._6, key._7, key._8, key._9, key._0)
@@ -75,6 +77,7 @@ STALK_TEXTURE = calcTextureCoords(0)
 TEXTURE_COLORS = (None, (128,255,255,255), (128,180,255,255), (204, 128, 255, 255))
 
 FACES = [( 0, 1, 0), ( 0,-1, 0), (-1, 0, 0), ( 1, 0, 0), ( 0, 0, 1), ( 0, 0,-1),]
+LATFACES = [(-1, 0, 0), ( 1, 0, 0), ( 0, 0, 1), ( 0, 0,-1)]
 
 
 class World(object):
@@ -112,17 +115,14 @@ class World(object):
 
         """
 
-        for i in range(1,100):
-            x = random.randint(-20,20)
-            y = random.randint(-20,0)
-            z = random.randint(-20,20)
-            self.add_block((x, y, z), TEXTURES[4])
-            if PROX:
-                self.hide_block((x, y, z))
-
         if PROX:
             for i in range(1, len(self.tipPositions)):
                 self.proxUpdate(self.tipPositions[i], self.tipPositions[i])
+
+        if TWODMODE:
+            self.addNutrients(0.1, (-40, 40, 0, 1, -40, 40))
+            return
+        self.addNutrients(0.01, (-40, 40, -40, 0, -40, 40))
 
     def proxUpdate(self, position, old_position):
         x, y, z = position
@@ -162,6 +162,21 @@ class World(object):
         if direc==key.U or direc=='u' or direc=='U': return (start[0], start[1]+1, start[2])
         if direc==key.D or direc=='d' or direc=='D': return (start[0], start[1]-1, start[2])
         return start
+
+    def addNutrients(self,density, bounds):
+    	""" Density is the probability that any given space will be a nutrient
+    	    bounds should be a 6-tuple (xmin,xmax,ymin,ymax,zmin,zmax)
+
+    	"""
+    	xmin,xmax,ymin,ymax,zmin,zmax = bounds
+    	for x in range(xmin,xmax):
+            for y in range(ymin, ymax):
+            	for z in range(zmin, zmax):
+            		if random.random()<density and ((x,y,z) not in self.world):
+            			self.add_block((x,y,z), TEXTURES[4])
+                        if PROX:
+                            self.hide_block((x, y, z))
+
 
     def exposed(self, position):
         """ Returns False is given `position` is surrounded on all 6 sides by
@@ -392,7 +407,7 @@ class RootSystem(object):
 
         """
         x,y,z = position
-        self.tipPositions = [None, (x-1,y,z), (x+1,y,z), (x,y-1,z)]
+        self.tipPositions = [None, (x-1,y,z), (x+1,y,z), (x,y,z+1),(x,y,z-1)]
         for i in range(1,len(self.tipPositions)):
             self.add_block(self.tipPositions[i], self.tipTex)
 
@@ -448,7 +463,11 @@ class RootSystem(object):
         moves = []
         for tip in self.tips.keys():
             x,y,z = tip
-            for dx, dy, dz in FACES:
+            if TWODMODE:
+                f = LATFACES
+            else:
+                f = FACES
+            for dx, dy, dz in f:
                 if (((x + dx, y + dy, z + dz) not in self.world.world) or (self.world.world[(x + dx, y + dy, z + dz)]==TEXTURES[4])) and y+dy<=0:
                     moves.append(((x,y,z),(x+dx,y+dy,z+dz)))
         return moves
@@ -513,6 +532,7 @@ class HumanPlayer(Player):
 class RandomPlayer(Player):
     def takeTurn(self):
         moves = self.rootSystem.legalMoves()
+        if len(moves)==0: return
         move = random.choice(moves)
         self.rootSystem.addToTip(move[0],move[1])
 
@@ -556,7 +576,7 @@ class Window(pyglet.window.Window):
             self.rootSystems.append(RootSystem(self.world, (10*i,0,0) ))
 
         self.players = []
-        self.players.append(HumanPlayer(self.rootSystems[0], self))
+        self.players.append(RandomPlayer(self.rootSystems[0], self))
         self.players.append(RandomPlayer(self.rootSystems[1], self))
 
         self.currentPlayerIndex = 0
