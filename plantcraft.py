@@ -14,8 +14,9 @@ from pyglet.window import key, mouse
 import welcome
 #[player1, player2, [density, proximity?, prox distance, graphics mode]]
 #['Human Player', 'None', [28.0, False, 5.0, '3D mode']]
-
-all_settings = welcome.main()
+all_settings = ['Human Player', 'None', [10.0, False, 5.0, '3D mode']]
+if len(sys.argv)>1:
+    all_settings = welcome.main()
 
 TICKS_PER_SEC = 60
 

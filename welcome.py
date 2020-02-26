@@ -172,6 +172,7 @@ class Mainscreen(pyglet.window.Window):
             event = self.dispatch_events()
         return all_settings
     
+    
 def main():           
     window = Mainscreen()   #make a complete instance of a window
     return window.run()    # essentially pyglet.app.run()
