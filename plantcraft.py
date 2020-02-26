@@ -21,7 +21,7 @@ TICKS_PER_SEC = 60
 
 SPEED = 15
 
-PROX = False
+PROX = True
 PROX_RANGE = 5
 
 INIT_ENERGY = 500
@@ -175,6 +175,7 @@ class World(object):
                 for z in range(zmin, zmax):
                     if random.random()<density and ((x,y,z) not in self.world):
                         self.add_block((x,y,z), TEXTURES[4])
+                        self.nutrients.append((x,y,z))
                         if PROX:
                             self.hide_block((x, y, z))
                         if (LOGENABLED and LOGNUTRIENTSTART):LOG += "(4," + str(x) + "," + str(y) + ","+ str(z) + ")\n";
@@ -439,7 +440,7 @@ class RootSystem(object):
         if newTip in self.world.world:
             if newTip in self.world.nutrients:
                 self.energy+=ENERGY_REWARD
-                self.nutrients.remove(newTip)
+                if PROX: self.nutrients.remove(newTip)
             else: return False
 
         if newTip[1] > 0: return False
