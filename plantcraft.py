@@ -176,6 +176,7 @@ class World(object):
                 for z in range(zmin, zmax):
                     if random.random()<density and ((x,y,z) not in self.world):
                         self.add_block((x,y,z), TEXTURES[4])
+                        self.nutrients.append((x,y,z))
                         if PROX:
                             self.hide_block((x, y, z))
                         if (LOGENABLED and LOGNUTRIENTSTART):LOG += "(4," + str(x) + "," + str(y) + ","+ str(z) + ")\n";
@@ -440,7 +441,7 @@ class RootSystem(object):
         if newTip in self.world.world:
             if newTip in self.world.nutrients:
                 self.energy+=ENERGY_REWARD
-                self.nutrients.remove(newTip)
+                if PROX: self.nutrients.remove(newTip)
             else: return False
 
         if newTip[1] > 0: return False
@@ -840,7 +841,7 @@ class Window(pyglet.window.Window):
                 self.currentPlayerIndex = 0
             self.players[self.currentPlayerIndex].takeTurn()
             global LOG
-            if (LOGENABLED): LOG += "(" + str(self.currentPlayerIndex) + ")"
+            if (LOGENABLED and not isinstance(self.currentPlayer(), HumanPlayer)): LOG += "(" + str(self.currentPlayerIndex) + ")"
 
     def currentPlayer(self):
         return self.players[self.currentPlayerIndex]
@@ -929,6 +930,7 @@ class Window(pyglet.window.Window):
 
         """
         if self.exclusive and isinstance(self.currentPlayer(), HumanPlayer):
+            global LOG
             vector = self.get_sight_vector()
             block, previous = self.rootSystems[self.currentPlayerIndex].hit_test(self.position, vector, 8, [TEXTURES[4]])
             if block and (self.world.world[block] == TEXTURES[2]):
@@ -937,9 +939,11 @@ class Window(pyglet.window.Window):
                     # ON OSX, control + left click = right click.
                     if previous:
                         self.rootSystems[self.currentPlayerIndex].addToTip(block, previous,True)
+                        if (LOGENABLED): LOG += "(" + str(self.currentPlayerIndex) + ")"
                         self.nextTurn()
                 elif button == pyglet.window.mouse.LEFT and block and previous:
                     self.rootSystems[self.currentPlayerIndex].addToTip(block, previous)
+                    if (LOGENABLED): LOG += "(" + str(self.currentPlayerIndex) + ")"
                     self.nextTurn()
         else:
             self.set_exclusive_mouse(True)
