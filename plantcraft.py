@@ -214,7 +214,7 @@ class World(object):
         if immediate:
             if self.exposed(position):
                 self.show_block(position)
-            self.check_neighbors(position)
+            #self.check_neighbors(position)
 
     def uncolorBlock(self, position, immediate=True):
         if position not in self.world: return
