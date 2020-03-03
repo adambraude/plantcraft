@@ -54,7 +54,7 @@ TEXTURE_PATH = "roots.png"
     #else:
         #TWODMODE = False
         #print(TWODMODE)
-    
+
 
 def normalize(position):
     """ Accepts `position` of arbitrary precision and returns the block
@@ -147,52 +147,11 @@ class World(object):
         """ Initialize the world by placing all the blocks.
 
         """
-<<<<<<< HEAD
-
-        if PROX:
-            for i in range(1, len(self.tipPositions)):
-                self.proxUpdate(self.tipPositions[i], self.tipPositions[i])
-
-        if TWODMODE:
-            self.addNutrients(0.1, (-40, 40, 0, 1, -40, 40))
-            return
-        self.addNutrients(0.01, (-40, 40, -40, 0, -40, 40))
-
-    def proxUpdate(self, position, old_position):
-        x, y, z = position
-        x_old, y_old, z_old = old_position
-        if position == old_position:
-            for i in range(x-PROX_RANGE, x+PROX_RANGE + 1):
-                for j in range(y-PROX_RANGE, y+PROX_RANGE + 1):
-                    for k in range(z-PROX_RANGE, z+PROX_RANGE + 1):
-                        new_pos = (i, j, k)
-                        if new_pos in self.world and self.world[new_pos] == TEXTURES[4]:
-                            self.show_block(new_pos)
-        if x == x_old and y == y_old:
-            for i in range (x-PROX_RANGE, x+PROX_RANGE + 1):
-                for j in range (y-PROX_RANGE, y+PROX_RANGE + 1):
-                    new_pos = (i, j, z)
-                    if new_pos in self.world and self.world[new_pos] == TEXTURES[4]:
-                        self.show_block(new_pos)
-        elif y == y_old and z == z_old:
-            for j in range (y-PROX_RANGE, y+PROX_RANGE + 1):
-                for k in range (z-PROX_RANGE, z+PROX_RANGE + 1):
-                    new_pos = (x, j, k)
-                    if new_pos in self.world and self.world[new_pos] == TEXTURES[4]:
-                                    self.show_block(new_pos)
-        elif z == z_old and x == x_old:
-            for i in range (x-PROX_RANGE, x+PROX_RANGE + 1):
-                for k in range (z-PROX_RANGE, z+PROX_RANGE + 1):
-                    new_pos = (i, y, k)
-                    if new_pos in self.world and self.world[new_pos] == TEXTURES[4]:
-                        self.show_block(new_pos)
-=======
         if REPLAY: return
         if self.mode:
             self.addNutrients(DENSITY/100, (-40, 40, 0, 1, -40, 40))
         else:
             self.addNutrients(DENSITY/100, (-20, 20, -20, 0, -20, 20))
->>>>>>> 114d3cd4aff32c5702e27db77ba149815b45f6e4
 
     @staticmethod
     def modByDirection(start, direc):
@@ -214,13 +173,6 @@ class World(object):
         xmin,xmax,ymin,ymax,zmin,zmax = bounds
         for x in range(xmin,xmax):
             for y in range(ymin, ymax):
-<<<<<<< HEAD
-            	for z in range(zmin, zmax):
-            		if random.random()<density and ((x,y,z) not in self.world):
-            			self.add_block((x,y,z), TEXTURES[4])
-                        if PROX:
-                            self.hide_block((x, y, z))
-=======
                 for z in range(zmin, zmax):
                     if random.random()<density and ((x,y,z) not in self.world):
                         self.add_block((x,y,z), TEXTURES[4])
@@ -228,7 +180,6 @@ class World(object):
                         if PROX:
                             self.hide_block((x, y, z))
                         if (LOGENABLED and LOGNUTRIENTSTART):LOG += "(4," + str(x) + "," + str(y) + ","+ str(z) + ")\n";
->>>>>>> 114d3cd4aff32c5702e27db77ba149815b45f6e4
 
 
     def exposed(self, position):
@@ -592,7 +543,7 @@ class RootSystem(object):
                     moves.append(((x,y,z),(x+dx,y+dy,z+dz)))
                     free = True
             self.tips[tip] = free
-                    
+
         return moves
 
     def remove_block(self, position, immediate=True):
@@ -663,10 +614,10 @@ class GreedyPlayer(Player):
     def __init__(self, rootSystem, window):
         super().__init__(rootSystem, window)
         self.rootSystem.tipTex=TEXTURES[3]
-    
+
     def takeTurn(self):
-        moves = self.rootSystem.legalMoves()                  
-        
+        moves = self.rootSystem.legalMoves()
+
         target = None
         tdist = 99999
         #horrifyingly inefficient
@@ -693,7 +644,7 @@ class GreedyPlayer(Player):
                         newmoves.append(m)
 
         if len(newmoves)==0: return
-            
+
         move = random.choice(newmoves)
         self.rootSystem.addToTip(move[0],move[1])
 
@@ -701,10 +652,10 @@ class GreedyForker(Player):
     def __init__(self, rootSystem, window):
         super().__init__(rootSystem, window)
         self.rootSystem.tipTex=TEXTURES[3]
-    
+
     def takeTurn(self):
-        moves = self.rootSystem.legalMoves()                  
-        
+        moves = self.rootSystem.legalMoves()
+
         target = None
         oldtarget = None
         origin = None
@@ -755,7 +706,7 @@ class GreedyForker(Player):
 
 
         if len(newmoves)==0: return
-            
+
         move = random.choice(newmoves)
         self.rootSystem.addToTip(move[0],move[1], fork)
 
@@ -809,7 +760,7 @@ class Window(pyglet.window.Window):
             moves = re.split("[(),\n\s]+", LOG)
             print(moves)
             self.pos = 0
-            while (moves[self.pos] !=  "W"): 
+            while (moves[self.pos] !=  "W"):
                 pre = moves[self.pos][:2]
                 if (pre == "IE"): INIT_ENERGY = int(moves[self.pos][3:])
                 elif (pre == "RC"): ROOT_COST = int(moves[self.pos][3:])
@@ -874,7 +825,7 @@ class Window(pyglet.window.Window):
         #self.alive = 1
 
     def nextTurn(self):
-        
+
         if (REPLAY):
             if self.pos >= len(self.moves): return
             while(self.moves[self.pos] != "True" and self.moves[self.pos] != "False"):
@@ -1168,11 +1119,11 @@ class Window(pyglet.window.Window):
 
         self.energyLabel.text = "Energy remaining: %d" % (self.rootSystems[self.currentPlayerIndex].energy)
         self.energyLabel.draw()
-        
+
     def on_close(self):
      #   print('trying to close')
          pyglet.app.exit()
-         
+
      #   return 0
 
 def setup_fog():
@@ -1218,14 +1169,14 @@ def setup():
 def main(settings=None):
     # print(settings)
     #SETTINGS = settings
-    
+
     #if settings[2][3] == '2D mode':
      #   print(settings[2][3])
      #   TWODMODE = True
-        
-    #adjust_settings(settings, TWODMODE) 
+
+    #adjust_settings(settings, TWODMODE)
     #print(TWODMODE)
-    
+
     window = Window(width=800, height=600, caption='PlantCraft', resizable=True)
     # Hide the mouse cursor and prevent the mouse from leaving the window.
     window.set_exclusive_mouse(True)
