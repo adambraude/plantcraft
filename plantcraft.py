@@ -4,12 +4,19 @@ import sys
 import math
 import random
 import time
+import re
 
 from collections import deque
 from pyglet import image
 from pyglet.gl import *
 from pyglet.graphics import TextureGroup
 from pyglet.window import key, mouse
+import welcome
+#[player1, player2, [density, proximity?, prox distance, graphics mode]]
+#['Human Player', 'None', [28.0, False, 5.0, '3D mode']]
+all_settings = ['Human Player', 'None', [10.0, False, 5.0, '3D mode']]
+if len(sys.argv)>1:
+    all_settings = welcome.main()
 
 TICKS_PER_SEC = 60
 
@@ -22,14 +29,32 @@ INIT_ENERGY = 500
 ROOT_COST = 10
 FORK_COST = 50
 ENERGY_REWARD = 100
+DENSITY = int(all_settings[2][0])
+if all_settings[2][3] == '2D mode':
+    TWODMODE = True
+else:
+    TWODMODE = False
+LOGENABLED = True
+LOGNUTRIENTSTART = True
+LOG = ""
 
-TWODMODE = False
+REPLAY = False
+REPLAY_FILE = "logfile"
+
 
 DEGREES= u'\N{DEGREE SIGN}'
 DIRECTIONS = (key.N, key.S, key.W, key.E, key.U, key.D)
 NUM_KEYS = (key._1, key._2, key._3, key._4, key._5, key._6, key._7, key._8, key._9, key._0)
 
 TEXTURE_PATH = "roots.png"
+
+#def adjust_settings(settings, TWODMODE):
+#    if settings[2][3] == '2D mode':
+ #       TWODMODE = True
+    #else:
+        #TWODMODE = False
+        #print(TWODMODE)
+    
 
 def normalize(position):
     """ Accepts `position` of arbitrary precision and returns the block
@@ -72,6 +97,11 @@ def calcTextureCoords(which, n=8):
     left += 0.001
     return 6*[left, 0, right, 0, right, 1, left, 1]
 
+def printLog(filename = "logfile"):
+    file = open(filename, "w")
+    file.write(LOG)
+    file.close()
+
 TEXTURES = (calcTextureCoords(1), calcTextureCoords(2), calcTextureCoords(3), calcTextureCoords(4), calcTextureCoords(5))
 STALK_TEXTURE = calcTextureCoords(0)
 TEXTURE_COLORS = (None, (128,255,255,255), (128,180,255,255), (204, 128, 255, 255))
@@ -82,8 +112,9 @@ LATFACES = [(-1, 0, 0), ( 1, 0, 0), ( 0, 0, 1), ( 0, 0,-1)]
 
 class World(object):
 
-    def __init__(self):
+    def __init__(self, mode):
 
+        self.mode = mode
         # A Batch is a collection of vertex lists for batched rendering.
         self.batch = pyglet.graphics.Batch()
 
@@ -93,6 +124,8 @@ class World(object):
         # A mapping from position to the texture of the block at that position.
         # This defines all the blocks that are currently in the world.
         self.world = {}
+
+        self.nutrients = []
 
         # Same mapping as `world` but only contains blocks that are shown.
         self.shown = {}
@@ -110,10 +143,11 @@ class World(object):
         self._initialize()
 
 
-    def _initialize(self):
+    def _initialize(self):  # take a parameter for nutrient density
         """ Initialize the world by placing all the blocks.
 
         """
+<<<<<<< HEAD
 
         if PROX:
             for i in range(1, len(self.tipPositions)):
@@ -152,6 +186,13 @@ class World(object):
                     new_pos = (i, y, k)
                     if new_pos in self.world and self.world[new_pos] == TEXTURES[4]:
                         self.show_block(new_pos)
+=======
+        if REPLAY: return
+        if self.mode:
+            self.addNutrients(DENSITY/100, (-40, 40, 0, 1, -40, 40))
+        else:
+            self.addNutrients(DENSITY/100, (-20, 20, -20, 0, -20, 20))
+>>>>>>> 114d3cd4aff32c5702e27db77ba149815b45f6e4
 
     @staticmethod
     def modByDirection(start, direc):
@@ -164,18 +205,30 @@ class World(object):
         return start
 
     def addNutrients(self,density, bounds):
-    	""" Density is the probability that any given space will be a nutrient
-    	    bounds should be a 6-tuple (xmin,xmax,ymin,ymax,zmin,zmax)
+        """ Density is the probability that any given space will be a nutrient
+            bounds should be a 6-tuple (xmin,xmax,ymin,ymax,zmin,zmax)
 
-    	"""
-    	xmin,xmax,ymin,ymax,zmin,zmax = bounds
-    	for x in range(xmin,xmax):
+        """
+        global LOG
+        if (LOGENABLED and LOGNUTRIENTSTART):LOG += "W";
+        xmin,xmax,ymin,ymax,zmin,zmax = bounds
+        for x in range(xmin,xmax):
             for y in range(ymin, ymax):
+<<<<<<< HEAD
             	for z in range(zmin, zmax):
             		if random.random()<density and ((x,y,z) not in self.world):
             			self.add_block((x,y,z), TEXTURES[4])
                         if PROX:
                             self.hide_block((x, y, z))
+=======
+                for z in range(zmin, zmax):
+                    if random.random()<density and ((x,y,z) not in self.world):
+                        self.add_block((x,y,z), TEXTURES[4])
+                        self.nutrients.append((x,y,z))
+                        if PROX:
+                            self.hide_block((x, y, z))
+                        if (LOGENABLED and LOGNUTRIENTSTART):LOG += "(4," + str(x) + "," + str(y) + ","+ str(z) + ")\n";
+>>>>>>> 114d3cd4aff32c5702e27db77ba149815b45f6e4
 
 
     def exposed(self, position):
@@ -210,7 +263,7 @@ class World(object):
         if immediate:
             if self.exposed(position):
                 self.show_block(position)
-            self.check_neighbors(position)
+            #self.check_neighbors(position)
 
     def uncolorBlock(self, position, immediate=True):
         if position not in self.world: return
@@ -390,6 +443,7 @@ class RootSystem(object):
     def __init__(self, world, position):
 
         self.world = world
+        self.nutrients = []
 
         self.energy = INIT_ENERGY
         self.tipTex = TEXTURES[2]
@@ -399,7 +453,7 @@ class RootSystem(object):
         self.blocks = {}
         self.tips = {}
 
-        self._initialize(position)
+        if (not REPLAY): self._initialize(position)
 
 
     def _initialize(self, position):
@@ -407,22 +461,36 @@ class RootSystem(object):
 
         """
         x,y,z = position
+        global LOG
+        if (LOGENABLED): LOG += "\n (R," + str(x)+ "," + str(y) + "," + str(z) + ",E:" + str(self.energy) + ")"
         self.tipPositions = [None, (x-1,y,z), (x+1,y,z), (x,y,z+1),(x,y,z-1)]
         for i in range(1,len(self.tipPositions)):
             self.add_block(self.tipPositions[i], self.tipTex)
+            if (LOGENABLED): LOG += "\n (T," + str(self.tipPositions[i][0])+ "," + str(self.tipPositions[i][1]) + "," + str(self.tipPositions[i][2]) + ")"
+
+        if PROX:
+            for i in range(1, len(self.tipPositions)):
+                self.proxUpdate(self.tipPositions[i], self.tipPositions[i])
+
+            for block in self.nutrients:
+                if block not in self.world.shown:
+                    self.world.show_block(block)
 
         self.add_block((x,y,z), TEXTURES[0])
         for i in range(1,6):
             self.add_block((x,y+i,z), STALK_TEXTURE)
+            if (LOGENABLED): LOG += "\n (S," + str(x)+ "," + str(y+i) + "," + str(z) + ")"
 
     def addToTip(self, oldTip, newTip, fork=False):
+        global LOG
         if (self.energy < ROOT_COST): return False
         if (fork and self.energy < FORK_COST): return False
 
         # don't accept new positions that collide or are above ground
         if newTip in self.world.world:
-            if self.world.world[newTip] == TEXTURES[4]:
+            if newTip in self.world.nutrients:
                 self.energy+=ENERGY_REWARD
+                if PROX: self.nutrients.remove(newTip)
             else: return False
 
         if newTip[1] > 0: return False
@@ -433,13 +501,64 @@ class RootSystem(object):
         if (not fork):
             self.world.uncolorBlock(oldTip)
             del self.tips[oldTip]
+        if (LOGENABLED): LOG += "\n (" + str(fork) + "," + str(oldTip[0])+ "," + str(oldTip[1]) + "," + str(oldTip[2]) + "," + str(newTip[0])+ "," + str(newTip[1]) + "," + str(newTip[2]) + ",E:" + str(self.energy) + ")"
 
         self.add_block(newTip, self.tipTex)
         #self.tipPositions[whichTip] = newTip
             #print(str(oldTip) +" -> " + str(newTip))
         if PROX:
             self.proxUpdate(newTip,oldTip)
+            for block in self.nutrients:
+                if block not in self.world.shown:
+                    self.world.show_block(block)
+
         return True
+
+    def proxUpdate(self, position, old_position):
+        x, y, z = position
+        x_old, y_old, z_old = old_position
+        # CASE: first update on game start, check the full range
+        if position == old_position:
+            for i in range(x-PROX_RANGE, x+PROX_RANGE + 1):
+                for j in range(y-PROX_RANGE, y+PROX_RANGE + 1):
+                    for k in range(z-PROX_RANGE, z+PROX_RANGE + 1):
+                        new_pos = (i, j, k)
+                        # show nutrients within initial range
+                        if new_pos in self.world.nutrients:
+                            self.nutrients.append(new_pos)
+        # CASE: root growth in z-axis, expand range
+        if x == x_old and y == y_old:
+            for i in range (x-PROX_RANGE, x+PROX_RANGE + 1):
+                for j in range (y-PROX_RANGE, y+PROX_RANGE + 1):
+                    if z - z_old > 0:
+                        new_pos = (i, j, z+PROX_RANGE)
+                    else:
+                        new_pos = (i, j, z-PROX_RANGE)
+                    # show nutrients that are now within range
+                    if new_pos in self.world.nutrients:
+                        self.nutrients.append(new_pos)
+        # CASE: root growth in x-axis, expand range
+        elif y == y_old and z == z_old:
+            for j in range (y-PROX_RANGE, y+PROX_RANGE + 1):
+                for k in range (z-PROX_RANGE, z+PROX_RANGE + 1):
+                    if x - x_old > 0:
+                        new_pos = (x+PROX_RANGE, j, k)
+                    else:
+                        new_pos = (x-PROX_RANGE, j, k)
+                    # show nutrients that are now within range
+                    if new_pos in self.world.nutrients:
+                        self.nutrients.append(new_pos)
+        # CASE: root growth in y-axis, expand range
+        elif z == z_old and x == x_old:
+            for i in range (x-PROX_RANGE, x+PROX_RANGE + 1):
+                for k in range (z-PROX_RANGE, z+PROX_RANGE + 1):
+                    if y - y_old > 0:
+                        new_pos = (i, y+PROX_RANGE, k)
+                    else:
+                        new_pos = (i, y-PROX_RANGE, k)
+                    # show nutrients that are now within range
+                    if new_pos in self.world.nutrients:
+                        self.nutrients.append(new_pos)
 
     def add_block(self, position, texture, immediate=True):
         """ Add a block with the given `texture` and `position` to the world.
@@ -467,9 +586,13 @@ class RootSystem(object):
                 f = LATFACES
             else:
                 f = FACES
+            free = False
             for dx, dy, dz in f:
                 if (((x + dx, y + dy, z + dz) not in self.world.world) or (self.world.world[(x + dx, y + dy, z + dz)]==TEXTURES[4])) and y+dy<=0:
                     moves.append(((x,y,z),(x+dx,y+dy,z+dz)))
+                    free = True
+            self.tips[tip] = free
+                    
         return moves
 
     def remove_block(self, position, immediate=True):
@@ -536,9 +659,114 @@ class RandomPlayer(Player):
         move = random.choice(moves)
         self.rootSystem.addToTip(move[0],move[1])
 
+class GreedyPlayer(Player):
+    def __init__(self, rootSystem, window):
+        super().__init__(rootSystem, window)
+        self.rootSystem.tipTex=TEXTURES[3]
+    
+    def takeTurn(self):
+        moves = self.rootSystem.legalMoves()                  
+        
+        target = None
+        tdist = 99999
+        #horrifyingly inefficient
+        for b in self.rootSystem.world.world.keys():
+            if self.rootSystem.world.world[b] == TEXTURES[4]:
+                for t in self.rootSystem.tips.keys():
+                    dist = abs(t[0]-b[0])+abs(t[1]-b[1])+abs(t[2]-b[2])
+                    if dist < tdist and self.rootSystem.tips[t]:
+                        tdist = dist
+                        target = b
+
+        newmoves = []
+        if target:
+            for m in moves:
+                if abs(m[1][0]-target[0])+abs(m[1][1]-target[1])+abs(m[1][2]-target[2]) < tdist:
+                    newmoves.append(m)
+
+        margin = 0
+        while len(newmoves)==0 and margin< 2 and self.rootSystem.energy>0:
+            margin += 1
+            if target:
+                for m in moves:
+                    if abs(m[1][0]-target[0])+abs(m[1][1]-target[1])+abs(m[1][2]-target[2]) < tdist+margin:
+                        newmoves.append(m)
+
+        if len(newmoves)==0: return
+            
+        move = random.choice(newmoves)
+        self.rootSystem.addToTip(move[0],move[1])
+
+class GreedyForker(Player):
+    def __init__(self, rootSystem, window):
+        super().__init__(rootSystem, window)
+        self.rootSystem.tipTex=TEXTURES[3]
+    
+    def takeTurn(self):
+        moves = self.rootSystem.legalMoves()                  
+        
+        target = None
+        oldtarget = None
+        origin = None
+        tdist = 99999
+        olddist = 99999
+        oldorigin = None
+        fork = True
+        #find the closest and second closest nutrients
+        for b in self.rootSystem.world.world.keys():
+            if self.rootSystem.world.world[b] == TEXTURES[4]:
+                for t in self.rootSystem.tips.keys():
+                    dist = abs(t[0]-b[0])+abs(t[1]-b[1])+abs(t[2]-b[2])
+                    if dist <= tdist and self.rootSystem.tips[t]:
+                        tdist = dist
+                        if b != target:
+                            olddist = tdist
+                            oldtarget = target
+                            oldorigin = origin
+                        target = b
+                        origin = t
+
+        newmoves = []
+        if target:
+            for m in moves:
+                if abs(m[1][0]-target[0])+abs(m[1][1]-target[1])+abs(m[1][2]-target[2]) < tdist:
+                    newmoves.append(m)
+            #if there is a second closest
+            if oldtarget:
+                newdist = abs(target[0]-oldtarget[0])+abs(target[1]-oldtarget[1])+abs(target[2]-oldtarget[2])
+                #if the second closest nutrient is best reached from a tip other than origin, don't fork
+                if oldorigin != origin:
+                    fork = False
+                #if it's easier to reach the second closest nutrient from the target than from the tip that will approach the target, do not fork
+                if fork and (newdist-olddist < FORK_COST/ROOT_COST):
+                    fork = False
+            else:
+                #if there is only 1 nutrient known, do not fork
+                fork = False
+
+        #accept sideways or backwards moves when moving toward the target is not possible
+        margin = 0
+        while len(newmoves)==0 and margin< 2 and self.rootSystem.energy>0:
+            margin += 1
+            if target:
+                for m in moves:
+                    if abs(m[1][0]-target[0])+abs(m[1][1]-target[1])+abs(m[1][2]-target[2]) < tdist+margin:
+                        newmoves.append(m)
+
+
+        if len(newmoves)==0: return
+            
+        move = random.choice(newmoves)
+        self.rootSystem.addToTip(move[0],move[1], fork)
+
 class Window(pyglet.window.Window):
 
     def __init__(self, *args, **kwargs):
+        global LOG
+        global INIT_ENERGY
+        global ROOT_COST
+        global FORK_COST
+        global ENERGY_REWARD
         super(Window, self).__init__(*args, **kwargs)
 
         # Whether or not the window exclusively captures the mouse.
@@ -568,18 +796,65 @@ class Window(pyglet.window.Window):
         # Velocity in the y (upward) direction.
         self.dy = 0
 
+        if not REPLAY:
+            LOG += "(IE:" + str(INIT_ENERGY) + ")\n"
+            LOG += "(RC:" + str(ROOT_COST) + ")\n"
+            LOG += "(FC:" + str(FORK_COST) + ")\n"
+            LOG += "(ER:" + str(ENERGY_REWARD) + ")\n"
         # Instance of the model that handles the world.
-        self.world = World()
-
+        self.world = World(TWODMODE)
+        if REPLAY:
+            file = open(REPLAY_FILE, "r")
+            LOG = file.read()
+            moves = re.split("[(),\n\s]+", LOG)
+            print(moves)
+            self.pos = 0
+            while (moves[self.pos] !=  "W"): 
+                pre = moves[self.pos][:2]
+                if (pre == "IE"): INIT_ENERGY = int(moves[self.pos][3:])
+                elif (pre == "RC"): ROOT_COST = int(moves[self.pos][3:])
+                elif (pre == "FC"): FORK_COST = int(moves[self.pos][3:])
+                elif (pre == "ER"): ENERGY_REWARD = int(moves[self.pos][3:])
+                self.pos+= 1
+            self.pos += 1
+            file.close()
+            for i in range(self.pos,len(moves),4):
+                if moves[i] == "R": break
+                #place nutrients
+                self.world.add_block((int(moves[i+1]),int(moves[i+2]),int(moves[i+3])), TEXTURES[int(moves[i])])
+                self.pos = i
         self.rootSystems = []
-        for i in range(2):
-            self.rootSystems.append(RootSystem(self.world, (10*i,0,0) ))
-
         self.players = []
-        self.players.append(RandomPlayer(self.rootSystems[0], self))
-        self.players.append(RandomPlayer(self.rootSystems[1], self))
 
-        self.currentPlayerIndex = 0
+        if (REPLAY):
+            while (moves[self.pos] != "True" and moves[self.pos] != "False"):
+                if (moves[self.pos] == "R"):
+                    rip = RootSystem(self.world, (moves[self.pos+1],moves[self.pos+2],moves[self.pos+3]))
+                    rip.energy = int(moves[self.pos+4][2:])
+                    self.rootSystems.append(rip)
+                    self.players.append(Player(self.rootSystems[len(self.rootSystems)-1], self))
+                    self.pos += 5
+                elif (moves[self.pos] == "T"):
+                    rip.add_block((int(moves[self.pos+1]),int(moves[self.pos+2]),int(moves[self.pos+3])),rip.tipTex)
+                    self.pos += 4
+                elif (moves[self.pos] == "S"):
+                    rip.add_block((int(moves[self.pos+1]),int(moves[self.pos+2]),int(moves[self.pos+3])),STALK_TEXTURE)
+                    self.pos += 4
+                elif (moves[self.pos] == "B"):
+                    rip.add_block((int(moves[self.pos+1]),int(moves[self.pos+2]),int(moves[self.pos+3]),TEXTURES[0]))
+                    self.pos += 4
+                else:
+                    self.pos += 1
+        else:
+            for i in range(2):
+                self.rootSystems.append(RootSystem(self.world, (10*i,0,0) ))
+            self.players.append(HumanPlayer(self.rootSystems[0], self))
+            self.players.append(RandomPlayer(self.rootSystems[1], self))
+
+        self.currentPlayerIndex = -1
+        #drop all the already-read moves from memory.
+        if REPLAY: self.moves = moves[self.pos:]
+        self.pos = 0
 
         self.positionLabel = pyglet.text.Label('', font_name="Arial", font_size=18, x=self.width/2,
                                                anchor_x='center', y=self.height-10, anchor_y='top',
@@ -595,13 +870,27 @@ class Window(pyglet.window.Window):
         # This call schedules the `update()` method to be called
         # TICKS_PER_SEC. This is the main game event loop.
         pyglet.clock.schedule_interval(self.update, 1.0 / TICKS_PER_SEC)
-        self.currentPlayer().takeTurn()
+        self.nextTurn()
+        #self.alive = 1
 
     def nextTurn(self):
-        self.currentPlayerIndex += 1
-        if self.currentPlayerIndex >= len(self.players):
-            self.currentPlayerIndex = 0
-        self.players[self.currentPlayerIndex].takeTurn()
+        
+        if (REPLAY):
+            if self.pos >= len(self.moves): return
+            while(self.moves[self.pos] != "True" and self.moves[self.pos] != "False"):
+                self.pos += 1
+                if self.pos >= len(self.moves): return
+            if self.moves[self.pos] == "True": fork = True
+            else: fork = False
+            self.players[int(self.moves[self.pos+8])].rootSystem.addToTip((int(self.moves[self.pos+1]),int(self.moves[self.pos+2]),int(self.moves[self.pos+3])),(int(self.moves[self.pos+4]),int(self.moves[self.pos+5]),int(self.moves[self.pos+6])),fork)
+            self.pos +=8
+        else:
+            self.currentPlayerIndex += 1
+            if self.currentPlayerIndex >= len(self.players):
+                self.currentPlayerIndex = 0
+            self.players[self.currentPlayerIndex].takeTurn()
+            global LOG
+            if (LOGENABLED and not isinstance(self.currentPlayer(), HumanPlayer)): LOG += "(" + str(self.currentPlayerIndex) + ")"
 
     def currentPlayer(self):
         return self.players[self.currentPlayerIndex]
@@ -690,6 +979,7 @@ class Window(pyglet.window.Window):
 
         """
         if self.exclusive and isinstance(self.currentPlayer(), HumanPlayer):
+            global LOG
             vector = self.get_sight_vector()
             block, previous = self.rootSystems[self.currentPlayerIndex].hit_test(self.position, vector, 8, [TEXTURES[4]])
             if block and (self.world.world[block] == TEXTURES[2]):
@@ -698,9 +988,11 @@ class Window(pyglet.window.Window):
                     # ON OSX, control + left click = right click.
                     if previous:
                         self.rootSystems[self.currentPlayerIndex].addToTip(block, previous,True)
+                        if (LOGENABLED): LOG += "(" + str(self.currentPlayerIndex) + ")"
                         self.nextTurn()
                 elif button == pyglet.window.mouse.LEFT and block and previous:
                     self.rootSystems[self.currentPlayerIndex].addToTip(block, previous)
+                    if (LOGENABLED): LOG += "(" + str(self.currentPlayerIndex) + ")"
                     self.nextTurn()
         else:
             self.set_exclusive_mouse(True)
@@ -751,6 +1043,8 @@ class Window(pyglet.window.Window):
             self.motion[2] += 1
         elif symbol == key.ESCAPE:
             self.set_exclusive_mouse(False)
+        elif symbol == key.BACKSPACE:
+            printLog()
 
     def on_key_release(self, symbol, modifiers):
         """ Called when the player releases a key. See pyglet docs for key
@@ -874,6 +1168,12 @@ class Window(pyglet.window.Window):
 
         self.energyLabel.text = "Energy remaining: %d" % (self.rootSystems[self.currentPlayerIndex].energy)
         self.energyLabel.draw()
+        
+    def on_close(self):
+     #   print('trying to close')
+         pyglet.app.exit()
+         
+     #   return 0
 
 def setup_fog():
     """ Configure the OpenGL fog properties.
@@ -915,12 +1215,26 @@ def setup():
     setup_fog()
 
 
-def main():
+def main(settings=None):
+    # print(settings)
+    #SETTINGS = settings
+    
+    #if settings[2][3] == '2D mode':
+     #   print(settings[2][3])
+     #   TWODMODE = True
+        
+    #adjust_settings(settings, TWODMODE) 
+    #print(TWODMODE)
+    
     window = Window(width=800, height=600, caption='PlantCraft', resizable=True)
     # Hide the mouse cursor and prevent the mouse from leaving the window.
     window.set_exclusive_mouse(True)
     setup()
     pyglet.app.run()
+    window.close()
+    return 0
+    #print('returning zero')
+    #return 0
 
 
 if __name__ == '__main__':
