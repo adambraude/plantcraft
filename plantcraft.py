@@ -472,6 +472,9 @@ class RootSystem(object):
 
         return True
 
+    def passTurn(self):
+        self.updateTips()
+
     def updateTips(self):
         for t in self.tips.keys():
             i = self.absorb.index(self.world.world[t])
@@ -597,7 +600,7 @@ s        position : tuple of len 3
         previous = None
         for _ in xrange(max_distance * m):
             key = normalize((x, y, z))
-            if key != previous and ((key in self.blocks)and (key in self.world.world)and (self.world.world[key] not in ignore)) and previous:
+            if key != previous and ((key in self.blocks) and (key in self.world.world) and (self.world.world[key] not in ignore)) and previous:
                 if abs(key[0]-previous[0])+abs(key[1]-previous[1])+abs(key[2]-previous[2])>1:
                     previous = (previous[0], key[1], previous[2])
                     if abs(key[0]-previous[0]) + abs(key[2]-previous[2])>1:
@@ -622,7 +625,9 @@ class HumanPlayer(Player):
 class RandomPlayer(Player):
     def takeTurn(self):
         moves = self.rootSystem.legalMoves()
-        if len(moves)==0: return
+        if len(moves)==0:
+            self.rootSystem.passTurn()
+            return
         move = random.choice(moves)
         self.rootSystem.addToTip(move[0],move[1])
 
@@ -639,6 +644,7 @@ class GreedyPlayer(Player):
         for b in self.rootSystem.world.world.keys():
             if self.rootSystem.world.world[b] == TEXTURES[4]:
                 for t in self.rootSystem.tips.keys():
+                    if (self.rootSystem.world.world[t] in self.rootSystem.absorb[:-1]): continue
                     dist = abs(t[0]-b[0])+abs(t[1]-b[1])+abs(t[2]-b[2])
                     if dist < tdist and self.rootSystem.tips[t]:
                         tdist = dist
@@ -658,7 +664,9 @@ class GreedyPlayer(Player):
                     if abs(m[1][0]-target[0])+abs(m[1][1]-target[1])+abs(m[1][2]-target[2]) < tdist+margin:
                         newmoves.append(m)
 
-        if len(newmoves)==0: return
+        if len(newmoves)==0:
+            self.rootSystem.passTurn()
+            return
             
         move = random.choice(newmoves)
         self.rootSystem.addToTip(move[0],move[1])
@@ -681,6 +689,7 @@ class GreedyForker(Player):
         for b in self.rootSystem.world.world.keys():
             if self.rootSystem.world.world[b] == TEXTURES[4]:
                 for t in self.rootSystem.tips.keys():
+                    if (self.rootSystem.world.world[t] in self.rootSystem.absorb[:-1]): continue
                     dist = abs(t[0]-b[0])+abs(t[1]-b[1])+abs(t[2]-b[2])
                     if dist <= tdist and self.rootSystem.tips[t]:
                         tdist = dist
@@ -719,7 +728,9 @@ class GreedyForker(Player):
                         newmoves.append(m)
 
 
-        if len(newmoves)==0: return
+        if len(newmoves)==0:
+            self.rootSystem.passTurn()
+            return
             
         move = random.choice(newmoves)
         self.rootSystem.addToTip(move[0],move[1], fork)
@@ -813,8 +824,8 @@ class Window(pyglet.window.Window):
         else:
             for i in range(2):
                 self.rootSystems.append(RootSystem(self.world, (10*i,0,0) ))
-            self.players.append(HumanPlayer(self.rootSystems[0], self))
-            self.players.append(RandomPlayer(self.rootSystems[1], self))
+            self.players.append(GreedyPlayer(self.rootSystems[0], self))
+            self.players.append(GreedyForker(self.rootSystems[1], self))
 
         self.currentPlayerIndex = -1
         #drop all the already-read moves from memory.
