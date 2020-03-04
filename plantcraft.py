@@ -797,9 +797,10 @@ class Window(pyglet.window.Window):
                 else:
                     self.pos += 1
         else:
+            # PLAYER ASSIGNMENT HAPPENS HERE
             for i in range(2):
                 self.rootSystems.append(RootSystem(self.world, (10*i,0,0) ))
-            self.players.append(HumanPlayer(self.rootSystems[0], self))
+            self.players.append(GreedyPlayer(self.rootSystems[0], self))#made this a greedy player
             self.players.append(RandomPlayer(self.rootSystems[1], self))
 
         self.currentPlayerIndex = -1
