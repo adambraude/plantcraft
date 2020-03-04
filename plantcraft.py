@@ -38,7 +38,7 @@ LOGENABLED = True
 LOGNUTRIENTSTART = True
 LOG = ""
 
-REPLAY = False
+REPLAY = True
 REPLAY_FILE = "logfile"
 
 
@@ -169,7 +169,7 @@ class World(object):
 
         """
         global LOG
-        if (LOGENABLED and LOGNUTRIENTSTART):LOG += "W";
+        if (LOGENABLED and LOGNUTRIENTSTART):LOG += "W"
         xmin,xmax,ymin,ymax,zmin,zmax = bounds
         for x in range(xmin,xmax):
             for y in range(ymin, ymax):
@@ -420,17 +420,20 @@ class RootSystem(object):
             if (LOGENABLED): LOG += "\n (T," + str(self.tipPositions[i][0])+ "," + str(self.tipPositions[i][1]) + "," + str(self.tipPositions[i][2]) + ")"
 
         if PROX:
-            for i in range(1, len(self.tipPositions)):
-                self.proxUpdate(self.tipPositions[i], self.tipPositions[i])
-
-            for block in self.nutrients:
-                if block not in self.world.shown:
-                    self.world.show_block(block)
+            self.initProx()
 
         self.add_block((x,y,z), TEXTURES[0])
         for i in range(1,6):
             self.add_block((x,y+i,z), STALK_TEXTURE)
             if (LOGENABLED): LOG += "\n (S," + str(x)+ "," + str(y+i) + "," + str(z) + ")"
+
+    def initProx(self):
+        for t in self.tips.keys():
+            self.proxUpdate(t, t)
+
+        for block in self.nutrients:
+            if block not in self.world.shown:
+                self.world.show_block(block)
 
     def addToTip(self, oldTip, newTip, fork=False):
         global LOG
@@ -462,7 +465,6 @@ class RootSystem(object):
             for block in self.nutrients:
                 if block not in self.world.shown:
                     self.world.show_block(block)
-
         return True
 
     def proxUpdate(self, position, old_position):
@@ -718,6 +720,8 @@ class Window(pyglet.window.Window):
         global ROOT_COST
         global FORK_COST
         global ENERGY_REWARD
+        global PROX
+        global PROX_RANGE
         super(Window, self).__init__(*args, **kwargs)
 
         # Whether or not the window exclusively captures the mouse.
@@ -752,16 +756,21 @@ class Window(pyglet.window.Window):
             LOG += "(RC:" + str(ROOT_COST) + ")\n"
             LOG += "(FC:" + str(FORK_COST) + ")\n"
             LOG += "(ER:" + str(ENERGY_REWARD) + ")\n"
+            if PROX:
+                LOG += "(PR:" + str(PROX_RANGE) + ")\n"
         # Instance of the model that handles the world.
         self.world = World(TWODMODE)
         if REPLAY:
             file = open(REPLAY_FILE, "r")
             LOG = file.read()
+            PROX = False
             moves = re.split("[(),\n\s]+", LOG)
-            print(moves)
             self.pos = 0
             while (moves[self.pos] !=  "W"): 
                 pre = moves[self.pos][:2]
+                if (pre == "PR"): 
+                    PROX = True
+                    PROX_RANGE = int(moves[self.pos][3:])
                 if (pre == "IE"): INIT_ENERGY = int(moves[self.pos][3:])
                 elif (pre == "RC"): ROOT_COST = int(moves[self.pos][3:])
                 elif (pre == "FC"): FORK_COST = int(moves[self.pos][3:])
@@ -772,7 +781,13 @@ class Window(pyglet.window.Window):
             for i in range(self.pos,len(moves),4):
                 if moves[i] == "R": break
                 #place nutrients
-                self.world.add_block((int(moves[i+1]),int(moves[i+2]),int(moves[i+3])), TEXTURES[int(moves[i])])
+                x = int(moves[i+1])
+                y = int(moves[i+2])
+                z = int(moves[i+3])
+                self.world.add_block((x,y,z), TEXTURES[int(moves[i])])
+                self.world.nutrients.append((x,y,z))
+                if PROX:
+                    self.world.hide_block((x, y, z))
                 self.pos = i
         self.rootSystems = []
         self.players = []
@@ -796,6 +811,7 @@ class Window(pyglet.window.Window):
                     self.pos += 4
                 else:
                     self.pos += 1
+            for r in self.rootSystems: r.initProx()
         else:
             for i in range(2):
                 self.rootSystems.append(RootSystem(self.world, (10*i,0,0) ))
@@ -825,16 +841,16 @@ class Window(pyglet.window.Window):
         #self.alive = 1
 
     def nextTurn(self):
-        
         if (REPLAY):
             if self.pos >= len(self.moves): return
+            print(self.pos)
             while(self.moves[self.pos] != "True" and self.moves[self.pos] != "False"):
                 self.pos += 1
                 if self.pos >= len(self.moves): return
             if self.moves[self.pos] == "True": fork = True
             else: fork = False
             self.players[int(self.moves[self.pos+8])].rootSystem.addToTip((int(self.moves[self.pos+1]),int(self.moves[self.pos+2]),int(self.moves[self.pos+3])),(int(self.moves[self.pos+4]),int(self.moves[self.pos+5]),int(self.moves[self.pos+6])),fork)
-            self.pos +=8
+            self.pos +=7
         else:
             self.currentPlayerIndex += 1
             if self.currentPlayerIndex >= len(self.players):
