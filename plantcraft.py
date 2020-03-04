@@ -38,7 +38,7 @@ LOGENABLED = True
 LOGNUTRIENTSTART = True
 LOG = ""
 
-REPLAY = True
+REPLAY = False
 REPLAY_FILE = "logfile"
 
 
@@ -856,7 +856,7 @@ class Window(pyglet.window.Window):
                                                anchor_x="center", y=10, anchor_y="bottom", color=(255,255,255,255))
         self.controlsLabel.text = "l-grow r-fork"
 
-        self.energyLabel = pyglet.text.Label("", font_name="Arial", font_size=18, x=self.width/5,
+        self.energyLabel = pyglet.text.Label("", font_name="Arial", font_size=18, x=self.width/4,
                                              anchor_x="center", y=self.height-10, anchor_y="top", color=(255,0,0,255))
 
         # This call schedules the `update()` method to be called
@@ -1070,6 +1070,9 @@ class Window(pyglet.window.Window):
         # adjust labels
         self.positionLabel.x = width/2
         self.positionLabel.y = height-10
+
+        self.energyLabel.x = width/4
+        self.energyLabel.y = height-10
         #reticle
         if self.reticle:
             self.reticle.delete()
@@ -1153,12 +1156,14 @@ class Window(pyglet.window.Window):
         """ Draw all the random text around the screen
 
         """
-        self.positionLabel.text = "(%d,%d,%d,%d%s,%d%s)" % (self.position[0], self.position[1], self.position[2], self.rotation[0], DEGREES, self.rotation[1], DEGREES)
-        self.positionLabel.draw()
+        #self.positionLabel.text = "(%d,%d,%d,%d%s,%d%s)" % (self.position[0], self.position[1], self.position[2], self.rotation[0], DEGREES, self.rotation[1], DEGREES)
+        #self.positionLabel.draw()
 
         self.controlsLabel.draw()
 
-        self.energyLabel.text = "Energy remaining: %d" % (self.rootSystems[self.currentPlayerIndex].energy)
+        self.energyLabel.text = ""
+        for i in range(len(self.rootSystems)):
+            self.energyLabel.text += "P%d Energy: %d" % (i+1,self.rootSystems[i].energy) + "  "
         self.energyLabel.draw()
         
     def on_close(self):
