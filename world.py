@@ -1,0 +1,320 @@
+import random
+
+from collections import deque
+from pyglet import image
+from pyglet.gl import *
+from pyglet.graphics import TextureGroup
+
+TEXTURE_PATH = "roots.png"
+LOGENABLED = True
+LOGNUTRIENTSTART = True
+LOG = ""
+REPLAY = False
+PROX = True
+
+FACES = [( 0, 1, 0), ( 0,-1, 0), (-1, 0, 0), ( 1, 0, 0), ( 0, 0, 1), ( 0, 0,-1),]
+
+TICKS_PER_SEC = 60
+
+def calcTextureCoords(which, n=16):
+    m = 1.0 / n
+    left = (which)*m
+    right = left+m - 0.001
+    left += 0.001
+    return 6*[left, 0.51, right, 0.51, right, 0.99, left, 0.99]
+
+def cube_vertices(x, y, z, n):
+    """ Return the vertices of the cube at position x, y, z with size 2*n.
+
+    """
+    return [
+        x-n,y+n,z-n, x-n,y+n,z+n, x+n,y+n,z+n, x+n,y+n,z-n,  # top
+        x-n,y-n,z-n, x+n,y-n,z-n, x+n,y-n,z+n, x-n,y-n,z+n,  # bottom
+        x-n,y-n,z-n, x-n,y-n,z+n, x-n,y+n,z+n, x-n,y+n,z-n,  # left
+        x+n,y-n,z+n, x+n,y-n,z-n, x+n,y+n,z-n, x+n,y+n,z+n,  # right
+        x-n,y-n,z+n, x+n,y-n,z+n, x+n,y+n,z+n, x-n,y+n,z+n,  # front
+        x+n,y-n,z-n, x-n,y-n,z-n, x-n,y+n,z-n, x+n,y+n,z-n,  # back
+    ]
+
+TEXTURES = (calcTextureCoords(1), calcTextureCoords(2), calcTextureCoords(3), calcTextureCoords(4), calcTextureCoords(5),
+    calcTextureCoords(6),calcTextureCoords(7),calcTextureCoords(8),calcTextureCoords(9))
+
+class World(object):
+
+    def __init__(self, mode, density):
+
+        self.mode = mode
+        self.density = density
+        # A Batch is a collection of vertex lists for batched rendering.
+        self.batch = pyglet.graphics.Batch()
+
+        # A TextureGroup manages an OpenGL texture.
+        self.group = TextureGroup(image.load(TEXTURE_PATH).get_texture())
+
+        # A mapping from position to the texture of the block at that position.
+        # This defines all the blocks that are currently in the world.
+        self.world = {}
+
+        self.nutrients = []
+
+        # Same mapping as `world` but only contains blocks that are shown.
+        self.shown = {}
+
+        # Mapping from position to a pyglet `VertextList` for all shown blocks.
+        self._shown = {}
+
+        # Mapping from sector to a list of positions inside that sector.
+        #self.sectors = {}
+
+        # Simple function queue implementation. The queue is populated with
+        # _show_block() and _hide_block() calls
+        self.queue = deque()
+
+        self._initialize()
+
+
+    def _initialize(self):  # take a parameter for nutrient density
+        """ Initialize the world by placing all the blocks.
+
+        """
+        if REPLAY: return
+        if self.mode:
+            self.addNutrients(self.density/100, (-40, 40, 0, 1, -40, 40))
+        else:
+            self.addNutrients(self.density/100, (-20, 20, -20, 0, -20, 20))
+
+    @staticmethod
+    def modByDirection(start, direc):
+        if direc==key.N or direc=='n' or direc=='N': return (start[0], start[1], start[2]-1)
+        if direc==key.S or direc=='s' or direc=='S': return (start[0], start[1], start[2]+1)
+        if direc==key.E or direc=='e' or direc=='E': return (start[0]+1, start[1], start[2])
+        if direc==key.W or direc=='w' or direc=='W': return (start[0]-1, start[1], start[2])
+        if direc==key.U or direc=='u' or direc=='U': return (start[0], start[1]+1, start[2])
+        if direc==key.D or direc=='d' or direc=='D': return (start[0], start[1]-1, start[2])
+        return start
+
+    def addNutrients(self,density, bounds):
+        """ Density is the probability that any given space will be a nutrient
+            bounds should be a 6-tuple (xmin,xmax,ymin,ymax,zmin,zmax)
+
+        """
+        global LOG
+        if (LOGENABLED and LOGNUTRIENTSTART):LOG += "W"
+        xmin,xmax,ymin,ymax,zmin,zmax = bounds
+        for x in range(xmin,xmax):
+            for y in range(ymin, ymax):
+                for z in range(zmin, zmax):
+                    if random.random()<density and ((x,y,z) not in self.world):
+                        self.add_block((x,y,z), TEXTURES[4])
+                        self.nutrients.append((x,y,z))
+                        if PROX:
+                            self.hide_block((x, y, z))
+                        if (LOGENABLED and LOGNUTRIENTSTART):LOG += "(4," + str(x) + "," + str(y) + ","+ str(z) + ")\n";
+
+
+    def exposed(self, position):
+        """ Returns False is given `position` is surrounded on all 6 sides by
+        blocks, True otherwise.
+
+        """
+        x, y, z = position
+        for dx, dy, dz in FACES:
+            if (x + dx, y + dy, z + dz) not in self.world:
+                return True
+        return False
+
+    def add_block(self, position, texture, immediate=True):
+        """ Add a block with the given `texture` and `position` to the world.
+
+        Parameters
+        ----------
+        position : tuple of len 3
+            The (x, y, z) position of the block to add.
+        texture : list of len 3
+            The coordinates of the texture squares. Use `tex_coords()` to
+            generate.
+        immediate : bool
+            Whether or not to draw the block immediately.
+
+        """
+        if position in self.world:
+            self.remove_block(position, immediate)
+        self.world[position] = texture
+        #self.sectors.setdefault(sectorize(position), []).append(position)
+        if immediate:
+            if self.exposed(position):
+                self.show_block(position)
+            #self.check_neighbors(position)
+
+    def uncolorBlock(self, position, immediate=True):
+        if position not in self.world: return
+
+        self.world[position] = TEXTURES[0]
+        if self.exposed(position):
+            #print(self.world[position], TEXTURES[0])
+
+            self.shown[position] = TEXTURES[0]
+            if immediate:
+                self.hide_block(position)
+                self.show_block(position)
+
+    def remove_block(self, position, immediate=True):
+        """ Remove the block at the given `position`.
+
+        Parameters
+        ----------
+        position : tuple of len 3
+            The (x, y, z) position of the block to remove.
+        immediate : bool
+            Whether or not to immediately remove block from canvas.
+
+        """
+        del self.world[position]
+        #self.sectors[sectorize(position)].remove(position)
+        if immediate:
+            if position in self.shown:
+                self.hide_block(position)
+            self.check_neighbors(position)
+
+    def check_neighbors(self, position):
+        """ Check all blocks surrounding `position` and ensure their visual
+        state is current. This means hiding blocks that are not exposed and
+        ensuring that all exposed blocks are shown. Usually used after a block
+        is added or removed.
+
+        """
+        x, y, z = position
+        for dx, dy, dz in FACES:
+            key = (x + dx, y + dy, z + dz)
+            if key not in self.world:
+                continue
+            if self.exposed(key):
+                if key not in self.shown:
+                    self.show_block(key)
+            else:
+                if key in self.shown:
+                    self.hide_block(key)
+
+    def show_block(self, position, immediate=True):
+        """ Show the block at the given `position`. This method assumes the
+        block has already been added with add_block()
+
+        Parameters
+        ----------
+        position : tuple of len 3
+            The (x, y, z) position of the block to show.
+        immediate : bool
+            Whether or not to show the block immediately.
+
+        """
+        texture = self.world[position]
+        self.shown[position] = texture
+        if immediate:
+            self._show_block(position, texture)
+        else:
+            self._enqueue(self._show_block, position, texture)
+
+    def _show_block(self, position, texture):
+        """ Private implementation of the `show_block()` method.
+
+        Parameters
+        ----------
+        position : tuple of len 3
+            The (x, y, z) position of the block to show.
+        texture : list of len 3
+            The coordinates of the texture squares. Use `tex_coords()` to
+            generate.
+
+        """
+        x, y, z = position
+        vertex_data = cube_vertices(x, y, z, 0.5)
+        texture_data = list(texture)
+        # create vertex list
+        # FIXME Maybe `add_indexed()` should be used instead
+        self._shown[position] = self.batch.add(24, GL_QUADS, self.group, ('v3f/static', vertex_data), ('t2f/static', texture_data))
+
+    def hide_block(self, position, immediate=True):
+        """ Hide the block at the given `position`. Hiding does not remove the
+        block from the world.
+
+        Parameters
+        ----------
+        position : tuple of len 3
+            The (x, y, z) position of the block to hide.
+        immediate : bool
+            Whether or not to immediately remove the block from the canvas.
+
+        """
+        self.shown.pop(position)
+        if immediate:
+            self._hide_block(position)
+        else:
+            self._enqueue(self._hide_block, position)
+
+    def _hide_block(self, position):
+        """ Private implementation of the 'hide_block()` method.
+
+        """
+        self._shown.pop(position).delete()
+
+    def _enqueue(self, func, *args):
+        """ Add `func` to the internal queue.
+
+        """
+        self.queue.append((func, args))
+
+    def _dequeue(self):
+        """ Pop the top function from the internal queue and call it.
+
+        """
+        func, args = self.queue.popleft()
+        func(*args)
+
+    def process_queue(self):
+        """ Process the entire queue while taking periodic breaks. This allows
+        the game loop to run smoothly. The queue contains calls to
+        _show_block() and _hide_block() so this method should be called if
+        add_block() or remove_block() was called with immediate=False
+
+        """
+        start = time.clock()
+        while self.queue and time.clock() - start < 1.0 / TICKS_PER_SEC:
+            self._dequeue()
+
+    def process_entire_queue(self):
+        """ Process the entire queue with no breaks.
+
+        """
+        while self.queue:
+            self._dequeue()
+
+    def hit_test(self, position, vector, max_distance=8, ignore=[]):
+        """ Line of sight search from current position. If a block is
+        intersected it is returned, along with the block previously in the line
+        of sight. If no block is found, return None, None.
+
+        Parameters
+        ----------
+        position : tuple of len 3
+            The (x, y, z) position to check visibility from.
+        vector : tuple of len 3
+            The line of sight vector.
+        max_distance : int
+            How many blocks away to search for a hit.
+
+        """
+        m = 8
+        x, y, z = position
+        dx, dy, dz = vector
+        previous = None
+        for _ in xrange(max_distance * m):
+            key = normalize((x, y, z))
+            if key != previous and ((key in self.world) and (self.world[key] not in ignore)) and previous:
+                if abs(key[0]-previous[0])+abs(key[1]-previous[1])+abs(key[2]-previous[2])>1:
+                    previous = (previous[0], key[1], previous[2])
+                    if abs(key[0]-previous[0]) + abs(key[2]-previous[2])>1:
+                        previous=(key[0], previous[1], previous[2])
+                return key, previous
+            previous = key
+            x, y, z = x + dx / m, y + dy / m, z + dz / m
+        return None, None
