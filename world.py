@@ -5,39 +5,7 @@ from pyglet import image
 from pyglet.gl import *
 from pyglet.graphics import TextureGroup
 
-TEXTURE_PATH = "roots.png"
-LOGENABLED = True
-LOGNUTRIENTSTART = True
-LOG = ""
-REPLAY = False
-PROX = True
-
-FACES = [( 0, 1, 0), ( 0,-1, 0), (-1, 0, 0), ( 1, 0, 0), ( 0, 0, 1), ( 0, 0,-1),]
-
-TICKS_PER_SEC = 60
-
-def calcTextureCoords(which, n=16):
-    m = 1.0 / n
-    left = (which)*m
-    right = left+m - 0.001
-    left += 0.001
-    return 6*[left, 0.51, right, 0.51, right, 0.99, left, 0.99]
-
-def cube_vertices(x, y, z, n):
-    """ Return the vertices of the cube at position x, y, z with size 2*n.
-
-    """
-    return [
-        x-n,y+n,z-n, x-n,y+n,z+n, x+n,y+n,z+n, x+n,y+n,z-n,  # top
-        x-n,y-n,z-n, x+n,y-n,z-n, x+n,y-n,z+n, x-n,y-n,z+n,  # bottom
-        x-n,y-n,z-n, x-n,y-n,z+n, x-n,y+n,z+n, x-n,y+n,z-n,  # left
-        x+n,y-n,z+n, x+n,y-n,z-n, x+n,y+n,z-n, x+n,y+n,z+n,  # right
-        x-n,y-n,z+n, x+n,y-n,z+n, x+n,y+n,z+n, x-n,y+n,z+n,  # front
-        x+n,y-n,z-n, x-n,y-n,z-n, x-n,y+n,z-n, x+n,y+n,z-n,  # back
-    ]
-
-TEXTURES = (calcTextureCoords(1), calcTextureCoords(2), calcTextureCoords(3), calcTextureCoords(4), calcTextureCoords(5),
-    calcTextureCoords(6),calcTextureCoords(7),calcTextureCoords(8),calcTextureCoords(9))
+import settings as set
 
 class World(object):
 
@@ -49,7 +17,7 @@ class World(object):
         self.batch = pyglet.graphics.Batch()
 
         # A TextureGroup manages an OpenGL texture.
-        self.group = TextureGroup(image.load(TEXTURE_PATH).get_texture())
+        self.group = TextureGroup(image.load(set.TEXTURE_PATH).get_texture())
 
         # A mapping from position to the texture of the block at that position.
         # This defines all the blocks that are currently in the world.
@@ -77,7 +45,7 @@ class World(object):
         """ Initialize the world by placing all the blocks.
 
         """
-        if REPLAY: return
+        if set.REPLAY: return
         if self.mode:
             self.addNutrients(self.density/100, (-40, 40, 0, 1, -40, 40))
         else:
@@ -98,18 +66,18 @@ class World(object):
             bounds should be a 6-tuple (xmin,xmax,ymin,ymax,zmin,zmax)
 
         """
-        global LOG
-        if (LOGENABLED and LOGNUTRIENTSTART):LOG += "W"
+        #global LOG
+        if (set.LOGENABLED and set.LOGNUTRIENTSTART):set.LOG += "W"
         xmin,xmax,ymin,ymax,zmin,zmax = bounds
         for x in range(xmin,xmax):
             for y in range(ymin, ymax):
                 for z in range(zmin, zmax):
                     if random.random()<density and ((x,y,z) not in self.world):
-                        self.add_block((x,y,z), TEXTURES[4])
+                        self.add_block((x,y,z), set.TEXTURES[4])
                         self.nutrients.append((x,y,z))
-                        if PROX:
+                        if set.PROX:
                             self.hide_block((x, y, z))
-                        if (LOGENABLED and LOGNUTRIENTSTART):LOG += "(4," + str(x) + "," + str(y) + ","+ str(z) + ")\n";
+                        if (set.LOGENABLED and set.LOGNUTRIENTSTART):set.LOG += "(4," + str(x) + "," + str(y) + ","+ str(z) + ")\n";
 
 
     def exposed(self, position):
@@ -118,7 +86,7 @@ class World(object):
 
         """
         x, y, z = position
-        for dx, dy, dz in FACES:
+        for dx, dy, dz in set.FACES:
             if (x + dx, y + dy, z + dz) not in self.world:
                 return True
         return False
@@ -149,11 +117,11 @@ class World(object):
     def uncolorBlock(self, position, immediate=True):
         if position not in self.world: return
 
-        self.world[position] = TEXTURES[0]
+        self.world[position] = set.TEXTURES[0]
         if self.exposed(position):
             #print(self.world[position], TEXTURES[0])
 
-            self.shown[position] = TEXTURES[0]
+            self.shown[position] = set.TEXTURES[0]
             if immediate:
                 self.hide_block(position)
                 self.show_block(position)
@@ -184,7 +152,7 @@ class World(object):
 
         """
         x, y, z = position
-        for dx, dy, dz in FACES:
+        for dx, dy, dz in set.FACES:
             key = (x + dx, y + dy, z + dz)
             if key not in self.world:
                 continue
@@ -227,7 +195,7 @@ class World(object):
 
         """
         x, y, z = position
-        vertex_data = cube_vertices(x, y, z, 0.5)
+        vertex_data = set.cube_vertices(x, y, z, 0.5)
         texture_data = list(texture)
         # create vertex list
         # FIXME Maybe `add_indexed()` should be used instead
@@ -278,7 +246,7 @@ class World(object):
 
         """
         start = time.clock()
-        while self.queue and time.clock() - start < 1.0 / TICKS_PER_SEC:
+        while self.queue and time.clock() - start < 1.0 / set.TICKS_PER_SEC:
             self._dequeue()
 
     def process_entire_queue(self):
