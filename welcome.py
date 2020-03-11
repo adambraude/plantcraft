@@ -24,7 +24,7 @@ def _settings():
             [sg.Text('Game Settings', size=(30, 1), justification='center', font=("Impact", 25))],
 
             [sg.Text('Select nutrient density... (10 ==> ~10% of blocks are nutrients)', font=("Helvetica", 10))],
-            [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 10)],
+            [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 10, resolution=0.1)],
             
             # Allow nutrient proximity?
             [sg.Text('Allow proximity visibility?', font=("Helvetica", 10))],
@@ -35,12 +35,12 @@ def _settings():
             [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 5)],
             
             #2D mode
-            [sg.Text('Select a graphics mode...', font=("Helvetica", 10))],
-            [sg.InputCombo(('3D mode', '2D mode', 'No graphics'), size=(35, 10))],
+            [sg.Text('Select a board configuration', font=("Helvetica", 10))],
+            [sg.InputCombo(('3D mode', '2D mode'), size=(35, 10), default_value='3D mode')],
             [sg.Text('Select Player 1', font=("Helvetica", 10))],
-            [sg.InputCombo(('Human Player', 'RandomPlayer', 'GreedyPlayer', 'GreedyForker', 'GeneticPlayer'), size=(35, 10))],
+            [sg.InputCombo(('Human Player', 'RandomPlayer', 'GreedyPlayer', 'GreedyForker', 'GeneticPlayer'), size=(35, 10),default_value='Human Player')],
             [sg.Text('Select Player 2', font=("Helvetica", 10))],    
-            [sg.InputCombo(('Human Player', 'RandomPlayer', 'GreedyPlayer', 'GreedyForker', 'GeneticPlayer'), size=(35, 10))],
+            [sg.InputCombo(('Human Player', 'RandomPlayer', 'GreedyPlayer', 'GreedyForker', 'GeneticPlayer', 'None'), size=(35, 10), default_value='GreedyPlayer')],
             
             [sg.Submit(tooltip='Click to submit this window'), sg.Cancel()],
             [sg.Image('ground.png')]
