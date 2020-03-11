@@ -16,7 +16,8 @@ all_settings = ['Human Player', 'None', [10.0, False, 5.0, '3D mode']]
 # Settings includes all input data for non-player settings information
 def _settings():    
     sg.theme('DarkGreen')
-    layout = [
+
+    column1 = [
 
             
             [sg.Image('logo.png')],
@@ -41,8 +42,15 @@ def _settings():
             [sg.Text('Select Player 2', font=("Helvetica", 10))],    
             [sg.InputCombo(('Human Player', 'RandomPlayer', 'GreedyPlayer', 'GreedyForker', 'GeneticPlayer'), size=(35, 10))],
             
-            [sg.Submit(tooltip='Click to submit this window'), sg.Cancel()] 
+            [sg.Submit(tooltip='Click to submit this window'), sg.Cancel()],
+            [sg.Image('ground.png')]
+            
             ]
+
+    layout = [
+        [sg.Column(column1, element_justification='center')],
+        
+    ]
     
     window = sg.Window('Settings', layout)
     
