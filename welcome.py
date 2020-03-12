@@ -9,8 +9,8 @@ from pyglet.gl import gl
 import PySimpleGUI as sg # for the interactive pop-ups
 # import plantcraft
 
-# a list holding all of the settings thus far: [Player1, Player2, [density, proximity?, visibility, gamemode]]
-all_settings = ['Human Player', 'None', [10.0, False, 5.0, '3D mode']]
+# a dict holding all the settings
+#all_settings = { "players":['Human Player', 'GreedyPlayer'], "TWODMODE":False, "PROX":True, "PROX_RANGE":5, "DENSITY":10}
     
     
 # Settings includes all input data for non-player settings information
@@ -58,11 +58,15 @@ def _settings():
     window.close()
     if event[0] == 'S':
         print(values)
-        return [values[5], values[6], [values[1], values[2], values[3], values[4]]] #make a list of all the items to return
+        out = { "players":[values[4], values[5]], "TWODMODE":values[3], "PROX":values[1], "PROX_RANGE":values[2], "DENSITY":values[0]}
+        print(out)
+        return out
     
     
-def main():           
-    return _settings()
+def main():
+    out = _settings()
+    if out is None: exit(0)
+    return out
 
 #EXPLORE, EXPLOIT, EXPAND, EXTERMINATE
     

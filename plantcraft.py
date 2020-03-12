@@ -17,7 +17,7 @@ from rootsystem import RootSystem
 from players import *
 #[player1, player2, [density, proximity?, prox distance, graphics mode]]
 #['Human Player', 'None', [28.0, False, 5.0, '3D mode']]
-all_settings = ['Human Player', 'None', [10.0, False, 5.0, '3D mode']]
+all_settings = { "players":['Human Player', 'GreedyPlayer'], "TWODMODE":False, "PROX":True, "PROX_RANGE":5, "DENSITY":10}
 if len(sys.argv)>1:
     all_settings = welcome.main()
 
@@ -25,15 +25,15 @@ TICKS_PER_SEC = 60
 
 SPEED = 15
 
-PROX = True
-PROX_RANGE = 5
+PROX = all_settings["PROX"]
+PROX_RANGE = all_settings["PROX_RANGE"]
 
 INIT_ENERGY = 500
 ROOT_COST = 10
 FORK_COST = 50
 ENERGY_REWARD = 20
-DENSITY = int(all_settings[2][0])
-if all_settings[2][3] == '2D mode':
+DENSITY = all_settings["DENSITY"]
+if all_settings["TWODMODE"] == '2D mode':
     TWODMODE = True
 else:
     TWODMODE = False
