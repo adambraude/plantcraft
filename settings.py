@@ -8,6 +8,7 @@ FORK_COST = 50
 ENERGY_REWARD = 20
 REPLAY = False
 REPLAY_FILE = "logfile"
+SPEED = 15
 
 TEXTURE_PATH = "roots.png"
 LOGNUTRIENTSTART = True
@@ -16,6 +17,17 @@ TICKS_PER_SEC = 60
 
 FACES = [( 0, 1, 0), ( 0,-1, 0), (-1, 0, 0), ( 1, 0, 0), ( 0, 0, 1), ( 0, 0,-1),]
 LATFACES = [(-1, 0, 0), ( 1, 0, 0), ( 0, 0, 1), ( 0, 0,-1)]
+
+DEGREES= u'\N{DEGREE SIGN}'
+DIRECTIONS = (key.N, key.S, key.W, key.E, key.U, key.D)
+NUM_KEYS = (key._1, key._2, key._3, key._4, key._5, key._6, key._7, key._8, key._9, key._0)
+
+def settings_init(all_settings):
+    DENSITY = int(all_settings[2][0])
+    if all_settings[2][3] == '2D mode':
+        TWODMODE = True
+    else:
+        TWODMODE = False
 
 def calcTextureCoords(which, n=16):
     m = 1.0 / n

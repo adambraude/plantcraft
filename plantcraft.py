@@ -15,38 +15,14 @@ import welcome
 from world import World
 from rootsystem import RootSystem
 from players import *
+from settings import *
 #[player1, player2, [density, proximity?, prox distance, graphics mode]]
 #['Human Player', 'None', [28.0, False, 5.0, '3D mode']]
 all_settings = ['Human Player', 'None', [10.0, False, 5.0, '3D mode']]
 if len(sys.argv)>1:
     all_settings = welcome.main()
 
-TICKS_PER_SEC = 60
-
-SPEED = 15
-
-PROX = True
-PROX_RANGE = 5
-
-INIT_ENERGY = 500
-ROOT_COST = 10
-FORK_COST = 50
-ENERGY_REWARD = 20
-DENSITY = int(all_settings[2][0])
-if all_settings[2][3] == '2D mode':
-    TWODMODE = True
-else:
-    TWODMODE = False
-LOGENABLED = True
-LOG = ""
-
-REPLAY = False
-REPLAY_FILE = "logfile"
-
-
-DEGREES= u'\N{DEGREE SIGN}'
-DIRECTIONS = (key.N, key.S, key.W, key.E, key.U, key.D)
-NUM_KEYS = (key._1, key._2, key._3, key._4, key._5, key._6, key._7, key._8, key._9, key._0)
+settings_init(all_settings)
 
 #def adjust_settings(settings, TWODMODE):
 #    if settings[2][3] == '2D mode':
