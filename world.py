@@ -9,15 +9,16 @@ import settings as set
 
 class World(object):
 
-    def __init__(self, mode, density):
+    def __init__(self, settings):
 
-        self.mode = mode
-        self.density = density
+        self.mode = settings.TWODMODE
+        self.density = settings.DENSITY
+        self.set = settings
         # A Batch is a collection of vertex lists for batched rendering.
         self.batch = pyglet.graphics.Batch()
 
         # A TextureGroup manages an OpenGL texture.
-        self.group = TextureGroup(image.load(set.TEXTURE_PATH).get_texture())
+        self.group = TextureGroup(image.load(self.set.TEXTURE_PATH).get_texture())
 
         # A mapping from position to the texture of the block at that position.
         # This defines all the blocks that are currently in the world.
@@ -45,7 +46,7 @@ class World(object):
         """ Initialize the world by placing all the blocks.
 
         """
-        if set.REPLAY: return
+        if self.set.REPLAY: return
         if self.mode:
             self.addNutrients(self.density/100, (-40, 40, 0, 1, -40, 40))
         else:
@@ -67,17 +68,17 @@ class World(object):
 
         """
         #global LOG
-        if (set.LOGENABLED and set.LOGNUTRIENTSTART):set.LOG += "W"
+        if (self.set.LOGENABLED and self.set.LOGNUTRIENTSTART):self.set.LOG += "W"
         xmin,xmax,ymin,ymax,zmin,zmax = bounds
         for x in range(xmin,xmax):
             for y in range(ymin, ymax):
                 for z in range(zmin, zmax):
                     if random.random()<density and ((x,y,z) not in self.world):
-                        self.add_block((x,y,z), set.TEXTURES[4])
+                        self.add_block((x,y,z), self.set.TEXTURES[4])
                         self.nutrients.append((x,y,z))
-                        if set.PROX:
+                        if self.set.PROX:
                             self.hide_block((x, y, z))
-                        if (set.LOGENABLED and set.LOGNUTRIENTSTART):set.LOG += "(4," + str(x) + "," + str(y) + ","+ str(z) + ")\n";
+                        if (self.set.LOGENABLED and self.set.LOGNUTRIENTSTART):self.set.LOG += "(4," + str(x) + "," + str(y) + ","+ str(z) + ")\n";
 
 
     def exposed(self, position):
@@ -86,7 +87,7 @@ class World(object):
 
         """
         x, y, z = position
-        for dx, dy, dz in set.FACES:
+        for dx, dy, dz in self.set.FACES:
             if (x + dx, y + dy, z + dz) not in self.world:
                 return True
         return False
@@ -117,11 +118,11 @@ class World(object):
     def uncolorBlock(self, position, immediate=True):
         if position not in self.world: return
 
-        self.world[position] = set.TEXTURES[0]
+        self.world[position] = self.set.TEXTURES[0]
         if self.exposed(position):
             #print(self.world[position], TEXTURES[0])
 
-            self.shown[position] = set.TEXTURES[0]
+            self.shown[position] = self.set.TEXTURES[0]
             if immediate:
                 self.hide_block(position)
                 self.show_block(position)
@@ -152,7 +153,7 @@ class World(object):
 
         """
         x, y, z = position
-        for dx, dy, dz in set.FACES:
+        for dx, dy, dz in self.set.FACES:
             key = (x + dx, y + dy, z + dz)
             if key not in self.world:
                 continue
@@ -195,7 +196,7 @@ class World(object):
 
         """
         x, y, z = position
-        vertex_data = set.cube_vertices(x, y, z, 0.5)
+        vertex_data = self.set.cube_vertices(x, y, z, 0.5)
         texture_data = list(texture)
         # create vertex list
         # FIXME Maybe `add_indexed()` should be used instead
@@ -246,7 +247,7 @@ class World(object):
 
         """
         start = time.clock()
-        while self.queue and time.clock() - start < 1.0 / set.TICKS_PER_SEC:
+        while self.queue and time.clock() - start < 1.0 / self.set.TICKS_PER_SEC:
             self._dequeue()
 
     def process_entire_queue(self):

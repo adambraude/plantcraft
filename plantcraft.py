@@ -15,6 +15,7 @@ import welcome
 from world import World
 from rootsystem import RootSystem
 from players import *
+from settings import Settings
 #[player1, player2, [density, proximity?, prox distance, graphics mode]]
 #['Human Player', 'None', [28.0, False, 5.0, '3D mode']]
 all_settings = { "players":['Human Player', 'GreedyPlayer'], "TWODMODE":False, "PROX":True, "PROX_RANGE":5, "DENSITY":10}
@@ -24,24 +25,6 @@ if len(sys.argv)>1:
 TICKS_PER_SEC = 60
 
 SPEED = 15
-
-PROX = all_settings["PROX"]
-PROX_RANGE = all_settings["PROX_RANGE"]
-
-INIT_ENERGY = 500
-ROOT_COST = 10
-FORK_COST = 50
-ENERGY_REWARD = 20
-DENSITY = all_settings["DENSITY"]
-if all_settings["TWODMODE"] == '2D mode':
-    TWODMODE = True
-else:
-    TWODMODE = False
-LOGENABLED = True
-LOG = ""
-
-REPLAY = False
-REPLAY_FILE = "logfile"
 
 
 DEGREES= u'\N{DEGREE SIGN}'
@@ -102,23 +85,12 @@ def printLog(filename = "logfile"):
     file.write(LOG)
     file.close()
 
-TEXTURES = (calcTextureCoords(1), calcTextureCoords(2), calcTextureCoords(3), calcTextureCoords(4), calcTextureCoords(5),
-    calcTextureCoords(6),calcTextureCoords(7),calcTextureCoords(8),calcTextureCoords(9))
-ABSORB = (TEXTURES[5],TEXTURES[6],TEXTURES[7],TEXTURES[8], TEXTURES[2])
-NUTRIENT_TEX = TEXTURES[4]
-STALK_TEXTURE = calcTextureCoords(0)
-TEXTURE_COLORS = (None, (128,255,255,255), (128,180,255,255), (204, 128, 255, 255))
+
+settings = Settings()
 
 class Window(pyglet.window.Window):
 
     def __init__(self, *args, **kwargs):
-        global LOG
-        global INIT_ENERGY
-        global ROOT_COST
-        global FORK_COST
-        global ENERGY_REWARD
-        global PROX
-        global PROX_RANGE
         super(Window, self).__init__(*args, **kwargs)
 
         # Whether or not the window exclusively captures the mouse.
@@ -148,30 +120,30 @@ class Window(pyglet.window.Window):
         # Velocity in the y (upward) direction.
         self.dy = 0
 
-        if not REPLAY:
-            LOG += "(IE:" + str(INIT_ENERGY) + ")\n"
-            LOG += "(RC:" + str(ROOT_COST) + ")\n"
-            LOG += "(FC:" + str(FORK_COST) + ")\n"
-            LOG += "(ER:" + str(ENERGY_REWARD) + ")\n"
-            if PROX:
-                LOG += "(PR:" + str(PROX_RANGE) + ")\n"
+        if not settings.REPLAY:
+            settings.LOG += "(IE:" + str(settings.INIT_ENERGY) + ")\n"
+            settings.LOG += "(RC:" + str(settings.ROOT_COST) + ")\n"
+            settings.LOG += "(FC:" + str(settings.FORK_COST) + ")\n"
+            settings.LOG += "(ER:" + str(settings.ENERGY_REWARD) + ")\n"
+            if settings.PROX:
+                settings.LOG += "(PR:" + str(settings.PROX_RANGE) + ")\n"
         # Instance of the model that handles the world.
-        self.world = World(TWODMODE,DENSITY)
-        if REPLAY:
-            file = open(REPLAY_FILE, "r")
-            LOG = file.read()
-            PROX = False
+        self.world = World(settings)
+        if settings.REPLAY:
+            file = open(settings.REPLAY_FILE, "r")
+            settings.LOG = file.read()
+            settings.PROX = False
             moves = re.split("[(),\n\s]+", LOG)
             self.pos = 0
             while (moves[self.pos] !=  "W"):
                 pre = moves[self.pos][:2]
                 if (pre == "PR"):
-                    PROX = True
-                    PROX_RANGE = int(moves[self.pos][3:])
-                if (pre == "IE"): INIT_ENERGY = int(moves[self.pos][3:])
-                elif (pre == "RC"): ROOT_COST = int(moves[self.pos][3:])
-                elif (pre == "FC"): FORK_COST = int(moves[self.pos][3:])
-                elif (pre == "ER"): ENERGY_REWARD = int(moves[self.pos][3:])
+                    settings.PROX = True
+                    settings.PROX_RANGE = int(moves[self.pos][3:])
+                if (pre == "IE"): settings.INIT_ENERGY = int(moves[self.pos][3:])
+                elif (pre == "RC"): settings.ROOT_COST = int(moves[self.pos][3:])
+                elif (pre == "FC"): settings.FORK_COST = int(moves[self.pos][3:])
+                elif (pre == "ER"): settings.ENERGY_REWARD = int(moves[self.pos][3:])
                 self.pos+= 1
             self.pos += 1
             file.close()
@@ -181,18 +153,18 @@ class Window(pyglet.window.Window):
                 x = int(moves[i+1])
                 y = int(moves[i+2])
                 z = int(moves[i+3])
-                self.world.add_block((x,y,z), TEXTURES[int(moves[i])])
+                self.world.add_block((x,y,z), settings.TEXTURES[int(moves[i])])
                 self.world.nutrients.append((x,y,z))
-                if PROX:
+                if settings.PROX:
                     self.world.hide_block((x, y, z))
                 self.pos = i
         self.rootSystems = []
         self.players = []
 
-        if (REPLAY):
+        if (settings.REPLAY):
             while (moves[self.pos] != "True" and moves[self.pos] != "False"):
                 if (moves[self.pos] == "R"):
-                    rip = RootSystem(self.world, (moves[self.pos+1],moves[self.pos+2],moves[self.pos+3]), TWODMODE)
+                    rip = RootSystem(self.world, (moves[self.pos+1],moves[self.pos+2],moves[self.pos+3]), settings.TWODMODE)
                     rip.energy = int(moves[self.pos+4][2:])
                     self.rootSystems.append(rip)
                     self.players.append(Player(self.rootSystems[len(self.rootSystems)-1], self))
@@ -201,23 +173,23 @@ class Window(pyglet.window.Window):
                     rip.add_block((int(moves[self.pos+1]),int(moves[self.pos+2]),int(moves[self.pos+3])),rip.absorb[len(rip.absorb)-1])
                     self.pos += 4
                 elif (moves[self.pos] == "S"):
-                    rip.add_block((int(moves[self.pos+1]),int(moves[self.pos+2]),int(moves[self.pos+3])),STALK_TEXTURE)
+                    rip.add_block((int(moves[self.pos+1]),int(moves[self.pos+2]),int(moves[self.pos+3])),settings.STALK_TEXTURE)
                     self.pos += 4
                 elif (moves[self.pos] == "B"):
-                    rip.add_block((int(moves[self.pos+1]),int(moves[self.pos+2]),int(moves[self.pos+3]),TEXTURES[0]))
+                    rip.add_block((int(moves[self.pos+1]),int(moves[self.pos+2]),int(moves[self.pos+3]),settings.TEXTURES[0]))
                     self.pos += 4
                 else:
                     self.pos += 1
             for r in self.rootSystems: r.initProx()
         else:
             for i in range(2):
-                self.rootSystems.append(RootSystem(self.world, (10*i,0,0),TWODMODE))
+                self.rootSystems.append(RootSystem(self.world, (10*i,0,0),settings.TWODMODE))
             self.players.append(GreedyPlayer(self.rootSystems[0], self))
             self.players.append(GreedyForker(self.rootSystems[1], self))
 
         self.currentPlayerIndex = -1
         #drop all the already-read moves from memory.
-        if REPLAY: self.moves = moves[self.pos:]
+        if settings.REPLAY: self.moves = moves[self.pos:]
         self.pos = 0
 
         self.positionLabel = pyglet.text.Label('', font_name="Arial", font_size=18, x=self.width/2,
@@ -238,7 +210,7 @@ class Window(pyglet.window.Window):
         #self.alive = 1
 
     def nextTurn(self):
-        if (REPLAY):
+        if (settings.REPLAY):
             if self.pos >= len(self.moves): return
             print(self.pos)
             while(self.moves[self.pos] != "True" and self.moves[self.pos] != "False"):
@@ -253,8 +225,7 @@ class Window(pyglet.window.Window):
             if self.currentPlayerIndex >= len(self.players):
                 self.currentPlayerIndex = 0
             self.players[self.currentPlayerIndex].takeTurn()
-            global LOG
-            if (LOGENABLED and not isinstance(self.currentPlayer(), HumanPlayer)): LOG += "(" + str(self.currentPlayerIndex) + ")"
+            if (settings.LOGENABLED and not isinstance(self.currentPlayer(), HumanPlayer)): settings.LOG += "(" + str(self.currentPlayerIndex) + ")"
 
     def currentPlayer(self):
         return self.players[self.currentPlayerIndex]
@@ -343,20 +314,19 @@ class Window(pyglet.window.Window):
 
         """
         if self.exclusive and isinstance(self.currentPlayer(), HumanPlayer):
-            global LOG
             vector = self.get_sight_vector()
-            block, previous = self.rootSystems[self.currentPlayerIndex].hit_test(self.position, vector, 8, [TEXTURES[4]])
-            if block and (self.world.world[block] in ABSORB):
+            block, previous = self.rootSystems[self.currentPlayerIndex].hit_test(self.position, vector, 8, [settings.NUTRIENT_TEXTURE])
+            if block and (self.world.world[block] in settings.ABSORB):
                 if (button == mouse.RIGHT) or \
                         ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
                     # ON OSX, control + left click = right click.
                     if previous:
                         self.rootSystems[self.currentPlayerIndex].addToTip(block, previous,True)
-                        if (LOGENABLED): LOG += "(" + str(self.currentPlayerIndex) + ")"
+                        if (settings.LOGENABLED): settings.LOG += "(" + str(self.currentPlayerIndex) + ")"
                         self.nextTurn()
                 elif button == pyglet.window.mouse.LEFT and block and previous:
                     self.rootSystems[self.currentPlayerIndex].addToTip(block, previous)
-                    if (LOGENABLED): LOG += "(" + str(self.currentPlayerIndex) + ")"
+                    if (settings.LOGENABLED): settings.LOG += "(" + str(self.currentPlayerIndex) + ")"
                     self.nextTurn()
         else:
             self.set_exclusive_mouse(True)

@@ -1,5 +1,4 @@
 import random
-import settings as set
 
 class Player(object):
 
@@ -101,7 +100,7 @@ class GreedyForker(Player):
                 if oldorigin != origin:
                     fork = False
                 #if it's easier to reach the second closest nutrient from the target than from the tip that will approach the target, do not fork
-                if fork and (newdist-olddist < set.FORK_COST/set.ROOT_COST):
+                if fork and (newdist-olddist < self.rootSystem.world.set.FORK_COST/self.rootSystem.world.set.ROOT_COST):
                     fork = False
             else:
                 #if there is only 1 nutrient known, do not fork
