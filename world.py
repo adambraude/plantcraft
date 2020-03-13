@@ -7,6 +7,7 @@ from pyglet.graphics import TextureGroup
 
 import settings as set
 
+
 class World(object):
 
     def __init__(self, settings):
@@ -276,8 +277,8 @@ class World(object):
         x, y, z = position
         dx, dy, dz = vector
         previous = None
-        for _ in xrange(max_distance * m):
-            key = normalize((x, y, z))
+        for _ in set.xrange(max_distance * m):
+            key = set.normalize((x, y, z))
             if key != previous and ((key in self.world) and (self.world[key] not in ignore)) and previous:
                 if abs(key[0]-previous[0])+abs(key[1]-previous[1])+abs(key[2]-previous[2])>1:
                     previous = (previous[0], key[1], previous[2])

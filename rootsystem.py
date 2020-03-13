@@ -1,5 +1,6 @@
 import settings as set
 
+
 class RootSystem(object):
 
     def __init__(self, world, position, mode):
@@ -16,6 +17,7 @@ class RootSystem(object):
         self.blocks = {}
         self.tips = {}
 
+        if (not self.world.set.PROX): self.nutrients = self.world.nutrients
         if (not self.world.set.REPLAY): self._initialize(position)
 
 
@@ -207,8 +209,8 @@ class RootSystem(object):
         x, y, z = position
         dx, dy, dz = vector
         previous = None
-        for _ in xrange(max_distance * m):
-            key = normalize((x, y, z))
+        for _ in set.xrange(max_distance * m):
+            key = set.normalize((x, y, z))
             if key != previous and ((key in self.blocks) and (key in self.world.world) and (self.world.world[key] not in ignore)) and previous:
                 if abs(key[0]-previous[0])+abs(key[1]-previous[1])+abs(key[2]-previous[2])>1:
                     previous = (previous[0], key[1], previous[2])

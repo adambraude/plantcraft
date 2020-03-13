@@ -58,7 +58,7 @@ def _settings():
     window.close()
     if event[0] == 'S':
         print(values)
-        out = { "players":[values[4], values[5]], "TWODMODE":values[3], "PROX":values[1], "PROX_RANGE":values[2], "DENSITY":values[0]}
+        out = { "players":[values[4], values[5]], "mode":values[3], "PROX":values[1], "PROX_RANGE":values[2], "DENSITY":values[0]}
         print(out)
         return out
     

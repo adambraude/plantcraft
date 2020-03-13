@@ -15,10 +15,10 @@ import welcome
 from world import World
 from rootsystem import RootSystem
 from players import *
-from settings import Settings
+import settings as set
 #[player1, player2, [density, proximity?, prox distance, graphics mode]]
 #['Human Player', 'None', [28.0, False, 5.0, '3D mode']]
-all_settings = { "players":['Human Player', 'GreedyPlayer'], "TWODMODE":False, "PROX":True, "PROX_RANGE":5, "DENSITY":10}
+all_settings = {}
 if len(sys.argv)>1:
     all_settings = welcome.main()
 
@@ -39,25 +39,9 @@ NUM_KEYS = (key._1, key._2, key._3, key._4, key._5, key._6, key._7, key._8, key.
         #print(TWODMODE)
 
 
-def normalize(position):
-    """ Accepts `position` of arbitrary precision and returns the block
-    containing that position.
 
-    Parameters
-    ----------
-    position : tuple of len 3
 
-    Returns
-    -------
-    block_position : tuple of ints of len 3
 
-    """
-    x, y, z = position
-    x, y, z = (int(round(x)), int(round(y)), int(round(z)))
-    return (x, y, z)
-
-if sys.version_info[0] >= 3:
-    xrange = range
 
 def cube_vertices(x, y, z, n):
     """ Return the vertices of the cube at position x, y, z with size 2*n.
@@ -85,8 +69,8 @@ def printLog(filename = "logfile"):
     file.write(LOG)
     file.close()
 
-
-settings = Settings()
+settings = set.Settings(all_settings)
+playersDict = {"Human Player":HumanPlayer, "RandomPlayer":RandomPlayer, "GreedyPlayer":GreedyPlayer, "GreedyForker":GreedyForker}
 
 class Window(pyglet.window.Window):
 
@@ -182,10 +166,14 @@ class Window(pyglet.window.Window):
                     self.pos += 1
             for r in self.rootSystems: r.initProx()
         else:
-            for i in range(2):
-                self.rootSystems.append(RootSystem(self.world, (10*i,0,0),settings.TWODMODE))
-            self.players.append(GreedyPlayer(self.rootSystems[0], self))
-            self.players.append(GreedyForker(self.rootSystems[1], self))
+            i=0
+            for p in settings.players:
+                if p in playersDict:
+                    player = playersDict[p]
+                    if player is not None:
+                        self.rootSystems.append(RootSystem(self.world, (10*i,0,0),settings.TWODMODE))
+                        self.players.append(player(self.rootSystems[i], self))
+                i += 1
 
         self.currentPlayerIndex = -1
         #drop all the already-read moves from memory.
@@ -269,7 +257,7 @@ class Window(pyglet.window.Window):
         self.world.process_entire_queue()
         m = 8
         dt = min(dt, 0.2)
-        for _ in xrange(m):
+        for _ in set.xrange(m):
             self._update(dt / m)
         if (not isinstance(self.currentPlayer(), HumanPlayer)):
             self.nextTurn()
@@ -465,8 +453,8 @@ class Window(pyglet.window.Window):
 
         """
         vector = self.get_sight_vector()
-        block, previous = self.rootSystems[self.currentPlayerIndex].hit_test(self.position, vector, 8, [NUTRIENT_TEXTURE])
-        if block and (self.world.world[block] in ABSORB):
+        block, previous = self.rootSystems[self.currentPlayerIndex].hit_test(self.position, vector, 8, [settings.NUTRIENT_TEXTURE])
+        if block and (self.world.world[block] in settings.ABSORB):
             x, y, z = previous
             vertex_data = cube_vertices(x, y, z, 0.51)
             glColor3d(0, 0, 0)

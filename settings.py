@@ -1,3 +1,5 @@
+import sys
+
 class Settings:
     def __init__(self, given={}):
         self.TEXTURES = (calcTextureCoords(1), calcTextureCoords(2), calcTextureCoords(3), calcTextureCoords(4), calcTextureCoords(5),
@@ -6,8 +8,10 @@ class Settings:
         self.INIT_ENERGY = 500
         self.LOGENABLED = True
         self.LOG = ""
-        self.PROX = True
-        self.PROX_RANGE = 5
+        if "PROX" in given: self.PROX = given["PROX"]
+        else: self.PROX = True
+        if given["PROX_RANGE"]: self.PROX_RANGE = int(given["PROX_RANGE"])
+        else: self.PROX_RANGE = 5
         self.ROOT_COST = 10
         self.FORK_COST = 50
         self.ENERGY_REWARD = 20
@@ -24,8 +28,14 @@ class Settings:
         self.ABSORB = (self.TEXTURES[5],self.TEXTURES[6],self.TEXTURES[7],self.TEXTURES[8], self.TEXTURES[2])
         self.STALK_TEXTURE = calcTextureCoords(0)
         self.NUTRIENT_TEXTURE = self.TEXTURES[4]
-        self.TWODMODE = False
-        self.DENSITY = 5
+        #the lower function makes a lowercase string
+        if given["mode"].lower() == "2D mode": self.TWODMODE = True
+        else: self.TWODMODE = False
+        if given["DENSITY"]: self.DENSITY = given["DENSITY"]
+        else: self.DENSITY = 5
+        if given["players"]: self.players = given["players"]
+        else: self.players = ["Human Player", "RandomPlayer"]
+
 
     def cube_vertices(self,x, y, z, n):
         """ Return the vertices of the cube at position x, y, z with size 2*n.
@@ -46,5 +56,25 @@ def calcTextureCoords(which, n=16):
     right = left+m - 0.001
     left += 0.001
     return 6*[left, 0.51, right, 0.51, right, 0.99, left, 0.99]
+
+if sys.version_info[0] >= 3:
+    xrange = range
+
+def normalize(position):
+    """ Accepts `position` of arbitrary precision and returns the block
+    containing that position.
+
+    Parameters
+    ----------
+    position : tuple of len 3
+
+    Returns
+    -------
+    block_position : tuple of ints of len 3
+
+    """
+    x, y, z = position
+    x, y, z = (int(round(x)), int(round(y)), int(round(z)))
+    return (x, y, z)
 
     
