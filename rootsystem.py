@@ -167,7 +167,7 @@ class RootSystem(object):
                 f = self.world.set.FACES
             free = False
             for dx, dy, dz in f:
-                if (((x + dx, y + dy, z + dz) not in self.world.world) or (self.world.world[(x + dx, y + dy, z + dz)]==self.world.set.TEXTURES[4])) and y+dy<=0:
+                if (((x + dx, y + dy, z + dz) not in self.world.world) or (self.world.world[(x + dx, y + dy, z + dz)]==self.world.set.NUTRIENT_TEXTURE)) and y+dy<=0:
                     moves.append(((x,y,z),(x+dx,y+dy,z+dz)))
                     free = True
             self.tips[tip] = free

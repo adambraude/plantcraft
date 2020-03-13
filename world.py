@@ -74,7 +74,7 @@ class World(object):
             for y in range(ymin, ymax):
                 for z in range(zmin, zmax):
                     if random.random()<density and ((x,y,z) not in self.world):
-                        self.add_block((x,y,z), self.set.TEXTURES[4])
+                        self.add_block((x,y,z), self.set.NUTRIENT_TEXTURE)
                         self.nutrients.append((x,y,z))
                         if self.set.PROX:
                             self.hide_block((x, y, z))

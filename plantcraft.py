@@ -465,7 +465,7 @@ class Window(pyglet.window.Window):
 
         """
         vector = self.get_sight_vector()
-        block, previous = self.rootSystems[self.currentPlayerIndex].hit_test(self.position, vector, 8, [TEXTURES[4]])
+        block, previous = self.rootSystems[self.currentPlayerIndex].hit_test(self.position, vector, 8, [NUTRIENT_TEXTURE])
         if block and (self.world.world[block] in ABSORB):
             x, y, z = previous
             vertex_data = cube_vertices(x, y, z, 0.51)
