@@ -42,6 +42,15 @@ def _settings():
             [sg.Text('Select Player 2', font=("Helvetica", 10))],    
             [sg.InputCombo(('Human Player', 'RandomPlayer', 'GreedyPlayer', 'GreedyForker', 'GeneticPlayer', 'None'), size=(35, 10), default_value='GreedyPlayer')],
             
+            [sg.Text('Select starting energy (as a multiple of the cost to grow 1 block)', font=("Helvetica", 10))],
+            [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 50, resolution=1)],
+
+            [sg.Text('Select fork cost (as a mutliple of the cost to grow 1 block)', font=("Helvetica", 10))],
+            [sg.Slider(range=(1, 100), orientation = 'h', size = (34,20), default_value = 8, resolution=1)],
+
+            [sg.Text('Select nutrient reward for claiming a nutrient block (as a mutliple of the cost to grow 1 block)', font=("Helvetica", 10))],
+            [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 2, resolution=1)],
+
             [sg.Submit(tooltip='Click to submit this window'), sg.Cancel()],
             [sg.Image('ground.png')]
             
@@ -58,7 +67,7 @@ def _settings():
     window.close()
     if event[0] == 'S':
         print(values)
-        out = { "players":[values[4], values[5]], "mode":values[3], "PROX":values[1], "PROX_RANGE":values[2], "DENSITY":values[0]}
+        out = { "players":[values[4], values[5]], "mode":values[3], "PROX":values[1], "PROX_RANGE":values[2], "DENSITY":values[0], "STARTE":values[6], "FORK":values[7], "REWARD":values[8]}
         print(out)
         return out
     

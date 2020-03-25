@@ -5,7 +5,7 @@ class Settings:
         self.TEXTURES = (calcTextureCoords(1), calcTextureCoords(2), calcTextureCoords(3), calcTextureCoords(4), calcTextureCoords(5),
                                                     calcTextureCoords(6),calcTextureCoords(7),calcTextureCoords(8),calcTextureCoords(9))
         self.TEXTURE_COLORS = (None, (128,255,255,255), (128,180,255,255), (204, 128, 255, 255))
-        self.INIT_ENERGY = 500
+        
         self.LOGENABLED = True
         self.LOG = ""
         if "PROX" in given: self.PROX = given["PROX"]
@@ -13,8 +13,13 @@ class Settings:
         if given["PROX_RANGE"]: self.PROX_RANGE = int(given["PROX_RANGE"])
         else: self.PROX_RANGE = 5
         self.ROOT_COST = 10
-        self.FORK_COST = 50
-        self.ENERGY_REWARD = 20
+        if "FORK" in given: self.FORK_COST = given["FORK"]*self.ROOT_COST
+        else: self.FORK_COST = 50
+        if "STARTE" in given: self.INIT_ENERGY = given["STARTE"]*self.ROOT_COST
+        else: self.INIT_ENERGY = 500
+        if "REWARD" in given: self.ENERGY_REWARD = given["REWARD"]*self.ROOT_COST
+        else: self.ENERGY_REWARD = 20
+
         self.REPLAY = False
         self.REPLAY_FILE = "logfile"
 
