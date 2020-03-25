@@ -51,6 +51,9 @@ def _settings():
             [sg.Text('Select nutrient reward for claiming a nutrient block (as a mutliple of the cost to grow 1 block)', font=("Helvetica", 10))],
             [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 2, resolution=1)],
 
+            [sg.Checkbox('Load from replay?', size=(10,1), default=False)],
+            [sg.Text('File', size=(8, 1)), sg.Input(), sg.FileBrowse()],
+
             [sg.Submit(tooltip='Click to submit this window'), sg.Cancel()],
             [sg.Image('ground.png')]
             
@@ -67,7 +70,8 @@ def _settings():
     window.close()
     if event[0] == 'S':
         print(values)
-        out = { "players":[values[4], values[5]], "mode":values[3], "PROX":values[1], "PROX_RANGE":values[2], "DENSITY":values[0], "STARTE":values[6], "FORK":values[7], "REWARD":values[8]}
+        out = { "players":[values[4], values[5]], "mode":values[3], "PROX":values[1], "PROX_RANGE":values[2], 
+                "DENSITY":values[0], "STARTE":values[6], "FORK":values[7], "REWARD":values[8], "REPLAY":values[9], "REPLAYFILE":values[10]}
         print(out)
         return out
     

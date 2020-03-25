@@ -65,7 +65,7 @@ def calcTextureCoords(which, n=16):
 
 def printLog(filename = "logfile"):
     file = open(filename, "w")
-    file.write(LOG)
+    file.write(settings.LOG)
     file.close()
 
 settings = set.Settings(all_settings)
@@ -116,17 +116,17 @@ class Window(pyglet.window.Window):
             file = open(settings.REPLAY_FILE, "r")
             settings.LOG = file.read()
             settings.PROX = False
-            moves = re.split("[(),\n\s]+", LOG)
+            moves = re.split("[(),\n\s]+", settings.LOG)
             self.pos = 0
             while (moves[self.pos] !=  "W"):
                 pre = moves[self.pos][:2]
                 if (pre == "PR"):
                     settings.PROX = True
                     settings.PROX_RANGE = int(moves[self.pos][3:])
-                if (pre == "IE"): settings.INIT_ENERGY = int(moves[self.pos][3:])
-                elif (pre == "RC"): settings.ROOT_COST = int(moves[self.pos][3:])
-                elif (pre == "FC"): settings.FORK_COST = int(moves[self.pos][3:])
-                elif (pre == "ER"): settings.ENERGY_REWARD = int(moves[self.pos][3:])
+                if (pre == "IE"): settings.INIT_ENERGY = int(float(moves[self.pos][3:]))
+                elif (pre == "RC"): settings.ROOT_COST = int(float(moves[self.pos][3:]))
+                elif (pre == "FC"): settings.FORK_COST = int(float(moves[self.pos][3:]))
+                elif (pre == "ER"): settings.ENERGY_REWARD = int(float(moves[self.pos][3:]))
                 self.pos+= 1
             self.pos += 1
             file.close()
@@ -148,18 +148,18 @@ class Window(pyglet.window.Window):
             while (moves[self.pos] != "True" and moves[self.pos] != "False"):
                 if (moves[self.pos] == "R"):
                     rip = RootSystem(self.world, (moves[self.pos+1],moves[self.pos+2],moves[self.pos+3]), settings.TWODMODE)
-                    rip.energy = int(moves[self.pos+4][2:])
+                    rip.energy = int(float(moves[self.pos+4][2:]))
                     self.rootSystems.append(rip)
                     self.players.append(Player(self.rootSystems[len(self.rootSystems)-1], self))
                     self.pos += 5
                 elif (moves[self.pos] == "T"):
-                    rip.add_block((int(moves[self.pos+1]),int(moves[self.pos+2]),int(moves[self.pos+3])),rip.absorb[len(rip.absorb)-1])
+                    rip.add_block((int(float(moves[self.pos+1])),int(float(moves[self.pos+2])),int(float(moves[self.pos+3]))),rip.absorb[len(rip.absorb)-1])
                     self.pos += 4
                 elif (moves[self.pos] == "S"):
-                    rip.add_block((int(moves[self.pos+1]),int(moves[self.pos+2]),int(moves[self.pos+3])),settings.STALK_TEXTURE)
+                    rip.add_block((int(float(moves[self.pos+1])),int(float(moves[self.pos+2])),int(float(moves[self.pos+3]))),settings.STALK_TEXTURE)
                     self.pos += 4
                 elif (moves[self.pos] == "B"):
-                    rip.add_block((int(moves[self.pos+1]),int(moves[self.pos+2]),int(moves[self.pos+3]),settings.TEXTURES[0]))
+                    rip.add_block((int(float(moves[self.pos+1])),int(float(moves[self.pos+2])),int(float(moves[self.pos+3])),settings.TEXTURES[0]))
                     self.pos += 4
                 else:
                     self.pos += 1

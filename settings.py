@@ -20,8 +20,10 @@ class Settings:
         if "REWARD" in given: self.ENERGY_REWARD = given["REWARD"]*self.ROOT_COST
         else: self.ENERGY_REWARD = 20
 
-        self.REPLAY = False
-        self.REPLAY_FILE = "logfile"
+        if "REPLAY" in given: self.REPLAY = given["REPLAY"]
+        else: self.REPLAY = False
+        if "REPLAYFILE" in given: self.REPLAY_FILE = given["REPLAYFILE"]
+        else: self.REPLAY_FILE = "logfile"
 
         self.TEXTURE_PATH = "roots.png"
         self.LOGNUTRIENTSTART = True
