@@ -1,6 +1,5 @@
 import settings as set
 
-
 class RootSystem(object):
 
     def __init__(self, world, position, mode):
