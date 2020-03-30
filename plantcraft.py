@@ -37,11 +37,6 @@ NUM_KEYS = (key._1, key._2, key._3, key._4, key._5, key._6, key._7, key._8, key.
         #TWODMODE = False
         #print(TWODMODE)
 
-
-
-
-
-
 def cube_vertices(x, y, z, n):
     """ Return the vertices of the cube at position x, y, z with size 2*n.
 
@@ -69,7 +64,7 @@ def printLog(filename = "logfile"):
     file.close()
 
 settings = set.Settings(all_settings)
-playersDict = {"Human Player":HumanPlayer, "RandomPlayer":RandomPlayer, "GreedyPlayer":GreedyPlayer, "GreedyForker":GreedyForker}
+playersDict = {"Human Player":HumanPlayer, "RandomPlayer":RandomPlayer, "GreedyPlayer":GreedyPlayer, "GreedyForker":GreedyForker, "GeneticPlayer":ExploreExploitPlayer}
 
 class Window(pyglet.window.Window):
 
@@ -150,7 +145,7 @@ class Window(pyglet.window.Window):
                     rip = RootSystem(self.world, (moves[self.pos+1],moves[self.pos+2],moves[self.pos+3]), settings.TWODMODE)
                     rip.energy = int(float(moves[self.pos+4][2:]))
                     self.rootSystems.append(rip)
-                    self.players.append(Player(self.rootSystems[len(self.rootSystems)-1], self))
+                    self.players.append(Player(self.rootSystems[len(self.rootSystems)-1], self, {}))
                     self.pos += 5
                 elif (moves[self.pos] == "T"):
                     rip.add_block((int(float(moves[self.pos+1])),int(float(moves[self.pos+2])),int(float(moves[self.pos+3]))),rip.absorb[len(rip.absorb)-1])
@@ -167,11 +162,11 @@ class Window(pyglet.window.Window):
         else:
             i=0
             for p in settings.players:
-                if p in playersDict:
-                    player = playersDict[p]
+                if p["type"] in playersDict:
+                    player = playersDict[p["type"]]
                     if player is not None:
                         self.rootSystems.append(RootSystem(self.world, (10*i,0,0),settings.TWODMODE))
-                        self.players.append(player(self.rootSystems[i], self))
+                        self.players.append(player(self.rootSystems[i], self, p))
                 i += 1
 
         self.currentPlayerIndex = -1
