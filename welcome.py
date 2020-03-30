@@ -31,20 +31,23 @@ def _settings():
             
             # Allow nutrient proximity?
             [sg.Text('Allow proximity visibility?', font=("Helvetica", 10))],
-            [sg.Checkbox('Proximity on', size=(10,1), default=False, key="proxy")],
+            [sg.Checkbox('Proximity on', size=(10,1), default=False, key="proxy", enable_events=True)],
             # [sg.Radio('Proximity on     ', "Selected proximity", default=True, size=(10,1)), sg.Radio('Proximity off', "off")],
             
-            [sg.Text('Select nutrient visibility... (how many blocks away do nutrient become visible?)', font=("Helvetica", 10))],
-            [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 5, key="proxydist")],
+            [sg.Text('Select nutrient visibility... (how many blocks away do nutrient become visible?)', font=("Helvetica", 10), key="proxydistlabel", visible=False)],
+            [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 5, key="proxydist", visible=False)],
             
             #2D mode
             [sg.Text('Select a board configuration', font=("Helvetica", 10))],
             [sg.InputCombo(('3D mode', '2D mode'), size=(35, 10), default_value='3D mode', key="mode")],
             [sg.Text('Select Player 1', font=("Helvetica", 10))],
-            [sg.InputCombo(('Human Player', 'RandomPlayer', 'GreedyPlayer', 'GreedyForker', 'GeneticPlayer'), size=(35, 10),default_value='Human Player', key="player1")],
+            [sg.InputCombo(('Human Player', 'RandomPlayer', 'GreedyPlayer', 'GreedyForker', 'ExploreExploitPlayer'), size=(35, 10),default_value='Human Player', key="player1", enable_events=True)],
+            [sg.Input(key="gene1", visible = False)],
+            [sg.Slider(range=(1, 100), orientation = 'h', size = (34,20), default_value = 10, resolution=1, key="gene1l", visible=False)],
             [sg.Text('Select Player 2', font=("Helvetica", 10))],    
-            [sg.InputCombo(('Human Player', 'RandomPlayer', 'GreedyPlayer', 'GreedyForker', 'GeneticPlayer', 'None'), size=(35, 10), default_value='GreedyPlayer', key="player2")],
-            
+            [sg.InputCombo(('Human Player', 'RandomPlayer', 'GreedyPlayer', 'GreedyForker', 'ExploreExploitPlayer', 'None'), size=(35, 10), default_value='GreedyPlayer', key="player2", enable_events=True)],
+            [sg.Input(key="gene2", visible = False)],
+            [sg.Slider(range=(1, 100), orientation = 'h', size = (34,20), default_value = 10, resolution=1, key="gene2l", visible=False)],
             [sg.Text('Select starting energy (as a multiple of the cost to grow 1 block)', font=("Helvetica", 10))],
             [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 50, resolution=1, key="starte")],
 
@@ -68,13 +71,41 @@ def _settings():
     
     while (True):
         event, values = window.read()
-        if event[0] == 'S':
+        print(event)
+        if event == 'Submit':
             print(values)
-            out = { "players":[{"type":values["player1"]}, {"type":values["player2"]}], "mode":values["mode"], "PROX":values["proxy"], "PROX_RANGE":values["proxydist"], 
+            players = []
+            if values['player1'] == "ExploreExploitPlayer":
+                players.append({"type":values["player1"], "genes":values["gene1"], "gene_length":int(values["gene1l"])})
+            else:
+                players.append({"type":values["player1"]})
+            if values['player2'] == "ExploreExploitPlayer":
+                players.append({"type":values["player2"], "genes":values["gene2"], "gene_length":int(values["gene2l"])})
+            else:
+                players.append({"type":values["player2"]})
+            out = { "players":players, "mode":values["mode"], "PROX":values["proxy"], "PROX_RANGE":values["proxydist"], 
                     "DENSITY":values["density"], "STARTE":values["starte"], "FORK":values["fork"], "REWARD":values["reward"], "REPLAY":values["replay"], "REPLAYFILE":values["replayf"]}
             print(out)
             window.close()
             return out
+        if event == 'Cancel':
+            window.close()
+            return None
+        window['proxydist'].Update(visible = values["proxy"])
+        window['proxydistlabel'].Update(visible = values["proxy"])
+        if values['player1'] == "ExploreExploitPlayer":
+            window['gene1'].Update(visible = True)
+            window['gene1l'].Update(visible = True)
+        else:
+            window['gene1'].Update(visible = False)
+            window['gene1l'].Update(visible = False)
+        if values['player2'] == "ExploreExploitPlayer":
+            window['gene2'].Update(visible = True)
+            window['gene2l'].Update(visible = True)
+        else:
+            window['gene2'].Update(visible = False)
+            window['gene2l'].Update(visible = False)
+
 
     
     

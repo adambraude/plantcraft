@@ -124,8 +124,7 @@ class GreedyForker(Player):
 
 class ExploreExploitPlayer(Player):
     def __init__(self, rootSystem, window, settings):
-        super().__init__(rootSystem, window)
-        self.rootSystem.tipTex=TEXTURES[3]
+        super().__init__(rootSystem, window, settings)
         self.genestrand = settings["genes"]
         self.gene_length = settings["gene_length"]
         self.traits = []
@@ -176,7 +175,7 @@ class ExploreExploitPlayer(Player):
         fork = True
          
         for b in self.rootSystem.world.world.keys():
-            if self.rootSystem.world.world[b] == TEXTURES[4]:
+            if b in self.rootSystem.world.nutrients:
                 for t in self.rootSystem.tips.keys():
                     dist = abs(t[0]-b[0])+abs(t[1]-b[1])+abs(t[2]-b[2])
                     if dist >= tdist and self.rootSystem.tips[t]:
@@ -200,7 +199,7 @@ class ExploreExploitPlayer(Player):
                 if oldorigin != origin:
                     fork = False
 
-                if fork and (newdist-olddist < FORK_COST/ROOT_COST):
+                if fork and (newdist-olddist < self.rootSystem.world.set.FORK_COST/self.rootSystem.world.set.ROOT_COST):
                     fork = False
             else:
 
@@ -236,7 +235,7 @@ class ExploreExploitPlayer(Player):
         fork = True
          #find the closest and second closest nutrients
         for b in self.rootSystem.world.world.keys():
-            if self.rootSystem.world.world[b] == TEXTURES[4]:
+            if b in self.rootSystem.world.nutrients:
                 for t in self.rootSystem.tips.keys():
                     dist = abs(t[0]-b[0])+abs(t[1]-b[1])+abs(t[2]-b[2])
                     if dist <= tdist and self.rootSystem.tips[t]:
@@ -260,7 +259,7 @@ class ExploreExploitPlayer(Player):
                 if oldorigin != origin:
                     fork = False
                  #if it's easier to reach the second closest nutrient from the target than from the tip that will approach the target, do not fork
-                if fork and (newdist-olddist < FORK_COST/ROOT_COST):
+                if fork and (newdist-olddist < self.rootSystem.world.set.FORK_COST/self.rootSystem.world.set.ROOT_COST):
                     fork = False
             else:
                  #if there is only 1 nutrient known, do not fork
