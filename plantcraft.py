@@ -21,6 +21,8 @@ import settings as set
 all_settings = {}
 all_settings = welcome.main()
 
+GFX = False
+
 TICKS_PER_SEC = 60
 
 SPEED = 15
@@ -187,8 +189,15 @@ class Window(pyglet.window.Window):
 
         # This call schedules the `update()` method to be called
         # TICKS_PER_SEC. This is the main game event loop.
-        pyglet.clock.schedule_interval(self.update, 1.0 / TICKS_PER_SEC)
+        if GFX:
+            pyglet.clock.schedule_interval(self.update, 1.0 / TICKS_PER_SEC)
+            
+        else:
+            #TODO: change this to a while game not over
+            pyglet.clock.schedule_interval(self.update, 1.0 / (TICKS_PER_SEC*10000))
+
         self.nextTurn()
+        
         #self.alive = 1
 
     def nextTurn(self):
@@ -248,6 +257,8 @@ class Window(pyglet.window.Window):
 
         """
         #self.rootSystem.process_queue()
+        if not GFX:
+            self.nextTurn()
         self.world.process_entire_queue()
         m = 8
         dt = min(dt, 0.2)
@@ -311,7 +322,7 @@ class Window(pyglet.window.Window):
                     if (settings.LOGENABLED): settings.LOG += "(" + str(self.currentPlayerIndex) + ")"
                     self.nextTurn()
         else:
-            self.set_exclusive_mouse(True)
+            if GFX: self.set_exclusive_mouse(True)
 
     def on_mouse_motion(self, x, y, dx, dy):
         """ Called when the player moves the mouse.
@@ -325,6 +336,7 @@ class Window(pyglet.window.Window):
             The movement of the mouse.
 
         """
+        if not GFX: return
         if self.exclusive:
             m = 0.15
             x, y = self.rotation
@@ -344,7 +356,7 @@ class Window(pyglet.window.Window):
             Number representing any modifying keys that were pressed.
 
         """
-
+        if not GFX: return
         if symbol == key.LEFT or symbol== key.A:
             self.motion[0] -= 1
         elif symbol == key.RIGHT or symbol == key.D:
@@ -358,7 +370,7 @@ class Window(pyglet.window.Window):
         elif symbol == key.DOWN or symbol == key.S:
             self.motion[2] += 1
         elif symbol == key.ESCAPE:
-            self.set_exclusive_mouse(False)
+            if GFX: self.set_exclusive_mouse(False)
         elif symbol == key.BACKSPACE:
             printLog()
 
@@ -374,6 +386,7 @@ class Window(pyglet.window.Window):
             Number representing any modifying keys that were pressed.
 
         """
+        if not GFX: return
         if symbol == key.LEFT or symbol== key.A:
             self.motion[0] += 1
         elif symbol == key.RIGHT or symbol == key.D:
@@ -460,14 +473,19 @@ class Window(pyglet.window.Window):
         """ Called by pyglet to draw the canvas.
 
         """
-        self.clear()
-        self.set_3d()
-        glColor3d(1, 1, 1)
-        self.world.batch.draw()
-        if isinstance(self.currentPlayer(), HumanPlayer): self.draw_focused_block()
-        self.set_2d()
-        self.draw_labels()
-        self.draw_reticle()
+        if (GFX):
+            self.clear()
+            self.set_3d()
+            glColor3d(1, 1, 1)
+            self.world.batch.draw()
+            if isinstance(self.currentPlayer(), HumanPlayer): self.draw_focused_block()
+            self.set_2d()
+            self.draw_labels()
+            self.draw_reticle()
+        else:
+            self.clear()
+            self.set_2d()
+            self.draw_labels()
 
     def draw_reticle(self):
         """ Draw the crosshairs in the center of the screen.
@@ -549,7 +567,7 @@ def main(settings=None):
 
     window = Window(width=800, height=600, caption='PlantCraft', resizable=True)
     # Hide the mouse cursor and prevent the mouse from leaving the window.
-    window.set_exclusive_mouse(True)
+    if GFX: window.set_exclusive_mouse(True)
     setup()
     pyglet.app.run()
     window.close()
