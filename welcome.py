@@ -2,180 +2,117 @@
 """
 Created on Thu Jan 30 16:02:27 2020
 
-@author: joshm
+@author: joshm, abraude
 """
 import pyglet
 from pyglet.gl import gl 
 import PySimpleGUI as sg # for the interactive pop-ups
 # import plantcraft
 
-# a list holding all of the settings thus far: [Player1, Player2, [density, proximity?, visibility, gamemode]]
-all_settings = ['Human Player', 'None', [10.0, False, 5.0, '3D mode']]
-
-
-# The pop-up window with a drop-down menu for selecting player 1's type
-def _player1():
-    sg.theme('DarkGreen')
-    layout = [           
-    [sg.InputCombo(('Human Player', 'AI Player'), size=(35, 10))],      
-    [sg.Submit(tooltip='Click to submit this window'), sg.Cancel()]    
-    ] 
-    
-    window = sg.Window('Select Player 1', layout)    
-
-    event, values = window.read()    
-    window.close()
-    if event[0] == 'S':
-        return values[0]
-    
-# The pop-up window with a drop-down menu for selecting player 2's type
-def _player2():
-    sg.theme('DarkGreen')
-    layout = [           
-    [sg.InputCombo(('Human Player', 'AI Player', 'None'), size=(35, 10))],      
-    [sg.Submit(tooltip='Click to submit this window'), sg.Cancel()]    
-    ]  
-
-    window = sg.Window('Select Player 2', layout)    
-
-    event, values = window.read()    
-    window.close()
-    if event[0] == 'S':
-        return values[0]
+# a dict holding all the settings
+#all_settings = { "players":['Human Player', 'GreedyPlayer'], "TWODMODE":False, "PROX":True, "PROX_RANGE":5, "DENSITY":10}
     
     
 # Settings includes all input data for non-player settings information
 def _settings():    
     sg.theme('DarkGreen')
-    layout = [
+
+    column1 = [
+
+            
+            [sg.Image('logo.png')],
             [sg.Text('Game Settings', size=(30, 1), justification='center', font=("Impact", 25))],
 
+            [sg.Checkbox('Replay?', size=(10,1), default=False, key="replay")],
+            [sg.Text('File', size=(8, 1)), sg.Input(key="replayf"), sg.FileBrowse()],
+
             [sg.Text('Select nutrient density... (10 ==> ~10% of blocks are nutrients)', font=("Helvetica", 10))],
-            [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 10)],
+            [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 10, resolution=0.1, key="density")],
             
             # Allow nutrient proximity?
             [sg.Text('Allow proximity visibility?', font=("Helvetica", 10))],
-            [sg.Checkbox('Proximity on', size=(10,1), default=False)],
+            [sg.Checkbox('Proximity on', size=(10,1), default=False, key="proxy", enable_events=True)],
             # [sg.Radio('Proximity on     ', "Selected proximity", default=True, size=(10,1)), sg.Radio('Proximity off', "off")],
             
-            [sg.Text('Select nutrient visibility... (how many blocks away do nutrient become visible?)', font=("Helvetica", 10))],
-            [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 5)],
+            [sg.Text('Select nutrient visibility... (how many blocks away do nutrient become visible?)', font=("Helvetica", 10), key="proxydistlabel", visible=False)],
+            [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 5, key="proxydist", visible=False)],
             
             #2D mode
-            [sg.Text('Select a graphics mode...', font=("Helvetica", 10))],
-            [sg.InputCombo(('3D mode', '2D mode', 'No graphics'), size=(35, 10))],
+            [sg.Text('Select a board configuration', font=("Helvetica", 10))],
+            [sg.InputCombo(('3D mode', '2D mode'), size=(35, 10), default_value='3D mode', key="mode")],
+            [sg.Text('Select Player 1', font=("Helvetica", 10))],
+            [sg.InputCombo(('Human Player', 'RandomPlayer', 'GreedyPlayer', 'GreedyForker', 'ExploreExploitPlayer'), size=(35, 10),default_value='Human Player', key="player1", enable_events=True)],
+            [sg.Input(key="gene1", visible = False)],
+            [sg.Slider(range=(1, 100), orientation = 'h', size = (34,20), default_value = 10, resolution=1, key="gene1l", visible=False)],
+            [sg.Text('Select Player 2', font=("Helvetica", 10))],    
+            [sg.InputCombo(('Human Player', 'RandomPlayer', 'GreedyPlayer', 'GreedyForker', 'ExploreExploitPlayer', 'None'), size=(35, 10), default_value='GreedyPlayer', key="player2", enable_events=True)],
+            [sg.Input(key="gene2", visible = False)],
+            [sg.Slider(range=(1, 100), orientation = 'h', size = (34,20), default_value = 10, resolution=1, key="gene2l", visible=False)],
+            [sg.Text('Select starting energy (as a multiple of the cost to grow 1 block)', font=("Helvetica", 10))],
+            [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 50, resolution=1, key="starte")],
+
+            [sg.Text('Select fork cost (as a mutliple of the cost to grow 1 block)', font=("Helvetica", 10))],
+            [sg.Slider(range=(1, 100), orientation = 'h', size = (34,20), default_value = 8, resolution=1, key="fork")],
+
+            [sg.Text('Select nutrient reward for claiming a nutrient block (as a mutliple of the cost to grow 1 block)', font=("Helvetica", 10))],
+            [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 2, resolution=1, key="reward")],
+
+            [sg.Submit(tooltip='Click to submit this window'), sg.Cancel()],
+            [sg.Image('ground.png')]
             
-            [sg.Submit(tooltip='Click to submit this window'), sg.Cancel()] 
             ]
+
+    layout = [
+        [sg.Column(column1, element_justification='center')],
+        
+    ]
     
     window = sg.Window('Settings', layout)
     
-    event, values = window.read()
-    window.close()
-    if event[0] == 'S':
-        return [values[0], values[1], values[2], values[3]] #make a list of all the items to return
-    
+    while (True):
+        event, values = window.read()
+        print(event)
+        if event == 'Submit':
+            print(values)
+            players = []
+            if values['player1'] == "ExploreExploitPlayer":
+                players.append({"type":values["player1"], "genes":values["gene1"], "gene_length":int(values["gene1l"])})
+            else:
+                players.append({"type":values["player1"]})
+            if values['player2'] == "ExploreExploitPlayer":
+                players.append({"type":values["player2"], "genes":values["gene2"], "gene_length":int(values["gene2l"])})
+            else:
+                players.append({"type":values["player2"]})
+            out = { "players":players, "mode":values["mode"], "PROX":values["proxy"], "PROX_RANGE":values["proxydist"], 
+                    "DENSITY":values["density"], "STARTE":values["starte"], "FORK":values["fork"], "REWARD":values["reward"], "REPLAY":values["replay"], "REPLAYFILE":values["replayf"]}
+            print(out)
+            window.close()
+            return out
+        if event == 'Cancel':
+            window.close()
+            return None
+        window['proxydist'].Update(visible = values["proxy"])
+        window['proxydistlabel'].Update(visible = values["proxy"])
+        if values['player1'] == "ExploreExploitPlayer":
+            window['gene1'].Update(visible = True)
+            window['gene1l'].Update(visible = True)
+        else:
+            window['gene1'].Update(visible = False)
+            window['gene1l'].Update(visible = False)
+        if values['player2'] == "ExploreExploitPlayer":
+            window['gene2'].Update(visible = True)
+            window['gene2l'].Update(visible = True)
+        else:
+            window['gene2'].Update(visible = False)
+            window['gene2l'].Update(visible = False)
 
-# =============================================================================
-# This is the button class which creates an object of a grey
-# rectangular button that can be clicked to incite certain
-# reactions.
-# =============================================================================
-class Button(pyglet.sprite.Sprite):
-    def __init__(self, x, y):
-        self.texture = pyglet.image.load("button.png")
-        super(Button, self).__init__(self.texture, x, y)
-        
-    def click(self, x, y):
-        if x >= self.x and y>= self.y:
-            if x<=self.x + self.texture.width and y<=self.y + self.texture.height:
-                return self
-        
-        
-# =============================================================================
-#     This is the main class which creates the total window. The class
-# makes use of many things already available in the window superclass of
-# pyglet. The run method of pyglet.app.run() is over-riden in order to make
-# a self-sufficient class. Four Button object are made, the intention is to
-# have those be clickable to incite settings options which are implemented 
-# through PySimpleGUI window pop-ups.
-# =============================================================================
-class Mainscreen(pyglet.window.Window):
-    def __init__(self):
-        super(Mainscreen, self).__init__(800, 600, 'Welcome to PlantCraft!')
-        logo = pyglet.image.load("logo.png") 
-        self.title = pyglet.sprite.Sprite(logo, x = 100 , y=450)
-        floor = pyglet.image.load("ground.png")
-        self.bottom = pyglet.sprite.Sprite(floor, x=-150, y=-150)     
-        self.buttons = {}
-        self.buttons['Player1'] = Button(120, 340)
-        self.buttons['Player2'] = Button(500, 340)
-        self.buttons['Settings']= Button(310, 260)
-        self.buttons['Play']=Button(310, 150)
-        self.text = pyglet.text.Label('Player 1', font_name ='Times New Roman',
-                                      font_size = 26, x=155, y=415, 
-                                      color=(66, 99, 245, 255))
-        self.text2 = pyglet.text.Label('Player 2', font_name ='Times New Roman',
-                                      font_size = 26, x=535, y=415, 
-                                      color=(235, 26, 26, 255))
-        self.text3 = pyglet.text.Label('Settings', font_name = 'Times New Roman',
-                                       font_size = 26, x=340, y =335, 
-                                       color=(0, 0, 0, 255))
-        self.text4 = pyglet.text.Label('CRAFT!', font_name = 'Impact',
-                                       font_size = 26, x=350, y =220, 
-                                       color=(5, 110, 30, 255))
-        self.alive = 1
-        background_color = (.0, .65, .0, 1)
-        gl.glClearColor(*background_color)
 
-        
-    # make the window visible to the screen
-    def on_draw(self):
-        self.clear()  
-        self.title.draw()
-        self.bottom.draw()
-        self.text.draw()
-        self.text2.draw()
-        self.text3.draw()
-        self.text4.draw()
-        for item, sprite in self.buttons.items():
-            sprite.draw()
-    
-    # closes the window via the top-right corner "X"
-    def on_close(self):
-        exit()
-        
-    
-    # interact with the buttons via clicking, uses the Button click()
-    def on_mouse_press(self, x, y, button, modifiers):
-        for item, sprite in self.buttons.items():
-            if sprite.click(x, y):
-                if item is 'Player1':
-                    all_settings[0] = _player1()   #the data returned by the window
-                elif item is 'Player2':
-                    all_settings[1] = _player2()
-                elif item is 'Settings':
-                    all_settings[2] = _settings()
-                elif item is 'Play':
-                    print("The selected settings are: "+str(all_settings))
-                    self.alive = 0
-                    #return all_settings    #return the selected settings
-                    
-                    
-                    # Game will start when this area is reached
-                    #Begin Game passes the information to the program to initialize the appropriate version of the game
-    
-    #over-rides the pyglet.app.run() 
-    def run(self):
-        while self.alive == 1:
-            self.on_draw()
-            event = self.dispatch_events()
-        return all_settings
     
     
-def main():           
-    window = Mainscreen()   #make a complete instance of a window
-    return window.run()    # essentially pyglet.app.run()
+def main():
+    out = _settings()
+    if out is None: exit(0)
+    return out
 
 #EXPLORE, EXPLOIT, EXPAND, EXTERMINATE
     
