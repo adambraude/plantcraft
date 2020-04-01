@@ -49,9 +49,9 @@ class World(object):
         """
         if self.set.REPLAY: return
         if self.mode:
-            self.addNutrients(self.density/100, (-40, 40, 0, 1, -40, 40))
+            self.addClusterNutrients(self.density/100, (-40, 40, 0, 1, -40, 40))
         else:
-            self.addNutrients(self.density/100, (-20, 20, -20, 0, -20, 20))
+            self.addClusterNutrients(self.density/100, (-20, 20, -20, 0, -20, 20))
 
     @staticmethod
     def modByDirection(start, direc):
@@ -81,6 +81,38 @@ class World(object):
                             self.hide_block((x, y, z))
                         if (self.set.LOGENABLED and self.set.LOGNUTRIENTSTART):self.set.LOG += "(4," + str(x) + "," + str(y) + ","+ str(z) + ")\n";
 
+
+    def addClusterNutrients(self, density, bounds,clusterCoeff=3, passes = 3):
+            """ Density is the probability that any given space will be a nutrient
+                bounds should be a 6-tuple (xmin,xmax,ymin,ymax,zmin,zmax)
+
+            """
+            #global LOG
+            if (self.set.LOGENABLED and self.set.LOGNUTRIENTSTART):self.set.LOG += "W"
+            xmin,xmax,ymin,ymax,zmin,zmax = bounds
+            for x in range(xmin,xmax):
+                for y in range(ymin, ymax):
+                    for z in range(zmin, zmax):
+                        if random.random()<density and ((x,y,z) not in self.world):
+                            self.add_block((x,y,z), self.set.NUTRIENT_TEXTURE)
+                            self.nutrients.append((x,y,z))
+                            if self.set.PROX:
+                                self.hide_block((x, y, z))
+                            if (self.set.LOGENABLED and self.set.LOGNUTRIENTSTART):self.set.LOG += "(4," + str(x) + "," + str(y) + ","+ str(z) + ")\n";
+            for i in range(passes):
+                passc = []
+                for x in range(xmin,xmax):
+                    for y in range(ymin, ymax):
+                        for z in range(zmin, zmax):
+                            if random.random()<density*clusterCoeff and ((x,y,z) not in self.world) and (((x+1,y,z) in self.nutrients) or ((x-1,y,z) in self.nutrients)
+                                or ((x,y-1,z) in self.nutrients) or ((x,y+1,z) in self.nutrients) or ((x,y,z+1) in self.nutrients) or ((x,y,z-1) in self.nutrients)):
+                                passc.append((x,y,z))
+                for (x,y,z) in passc:
+                    self.add_block((x,y,z), self.set.NUTRIENT_TEXTURE)
+                    self.nutrients.append((x,y,z))
+                    if self.set.PROX:
+                        self.hide_block((x, y, z))
+                    if (self.set.LOGENABLED and self.set.LOGNUTRIENTSTART):self.set.LOG += "(4," + str(x) + "," + str(y) + ","+ str(z) + ")\n";
 
     def exposed(self, position):
         """ Returns False is given `position` is surrounded on all 6 sides by
