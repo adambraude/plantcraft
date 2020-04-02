@@ -27,8 +27,12 @@ def _settings():
             [sg.Text('File', size=(8, 1)), sg.Input(key="replayf"), sg.FileBrowse()],
 
             [sg.Text('Select nutrient density... (10 ==> ~10% of blocks are nutrients)', font=("Helvetica", 10))],
-            [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 10, resolution=0.1, key="density")],
-            
+            [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 3, resolution=0.1, key="density")],
+            [sg.Text('Select nutrient clustering (higher->more clustering)', font=("Helvetica", 10))],
+            [sg.Slider(range=(0, 1), orientation = 'h', size = (34,20), default_value = 0.2, resolution=0.01, key="cluster")],
+            [sg.Text('Select nutrient clustering passes (more->larger clusters)', font=("Helvetica", 10))],
+            [sg.Slider(range=(0, 10), orientation = 'h', size = (34,20), default_value = 3, resolution=1, key="clusterp")],
+
             # Allow nutrient proximity?
             [sg.Text('Allow proximity visibility?', font=("Helvetica", 10))],
             [sg.Checkbox('Proximity on', size=(10,1), default=False, key="proxy", enable_events=True)],
@@ -84,7 +88,8 @@ def _settings():
             else:
                 players.append({"type":values["player2"]})
             out = { "players":players, "mode":values["mode"], "PROX":values["proxy"], "PROX_RANGE":values["proxydist"], 
-                    "DENSITY":values["density"], "STARTE":values["starte"], "FORK":values["fork"], "REWARD":values["reward"], "REPLAY":values["replay"], "REPLAYFILE":values["replayf"]}
+                    "DENSITY":values["density"], "STARTE":values["starte"], "FORK":values["fork"], "REWARD":values["reward"], 
+                    "REPLAY":values["replay"], "REPLAYFILE":values["replayf"], "CLUSTER":values["cluster"], "CLUSTERP":values["clusterp"]}
             print(out)
             window.close()
             return out
