@@ -116,6 +116,29 @@ class World(object):
                         self.hide_block((x, y, z))
                     if (self.set.LOGENABLED and self.set.LOGNUTRIENTSTART):self.set.LOG += "(4," + str(x) + "," + str(y) + ","+ str(z) + ")\n";
 
+    def addChunkNutrients(self, density, bounds,variance=0.9, chunkSize = 5):
+            """ Density is the probability that any given space will be a nutrient
+                bounds should be a 6-tuple (xmin,xmax,ymin,ymax,zmin,zmax)
+
+            """
+            #global LOG
+            if (self.set.LOGENABLED and self.set.LOGNUTRIENTSTART):self.set.LOG += "W"
+            xmin,xmax,ymin,ymax,zmin,zmax = bounds
+            for x in range(xmin,xmax, chunkSize):
+                for y in range(ymin, ymax, chunkSize):
+                    for z in range(zmin, zmax,chunkSize):
+                        d = density*(random.random()*variance*2+(1-variance))
+                        for xp in range(0,chunkSize):
+                            for yp in range(0, chunkSize):
+                                for zp in range(0, chunkSize):
+                                    if random.random()<d and ((x,y,z) not in self.world):
+                                        self.add_block((x+xp,y+yp,z+zp), self.set.NUTRIENT_TEXTURE)
+                                        self.nutrients.append((x+xp,y+yp,z+zp))
+                                        if self.set.PROX:
+                                            self.hide_block((x+xp, y+yp, z+zp))
+                                        if (self.set.LOGENABLED and self.set.LOGNUTRIENTSTART):self.set.LOG += "(4," + str(x+xp) + "," + str(y+yp) + ","+ str(z+zp) + ")\n";
+
+
     def exposed(self, position):
         """ Returns False is given `position` is surrounded on all 6 sides by
         blocks, True otherwise.
