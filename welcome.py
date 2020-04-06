@@ -27,7 +27,7 @@ def _settings():
             [sg.Text('File', size=(8, 1)), sg.Input(key="replayf"), sg.FileBrowse()],
 
             [sg.Text('Select nutrient density... (10 ==> ~10% of blocks are nutrients)', font=("Helvetica", 10))],
-            [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 10, resolution=0.1, key="density")],
+            [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 2, resolution=0.1, key="density")],
             
             # Allow nutrient proximity?
             [sg.Text('Allow proximity visibility?', font=("Helvetica", 10))],
@@ -41,7 +41,7 @@ def _settings():
             [sg.Text('Select a board configuration', font=("Helvetica", 10))],
             [sg.InputCombo(('3D mode', '2D mode'), size=(35, 10), default_value='3D mode', key="mode")],
             [sg.Text('Select Player 1', font=("Helvetica", 10))],
-            [sg.InputCombo(('Human Player', 'RandomPlayer', 'GreedyPlayer', 'GreedyForker', 'ExploreExploitPlayer'), size=(35, 10),default_value='Human Player', key="player1", enable_events=True)],
+            [sg.InputCombo(('Human Player', 'RandomPlayer', 'GreedyPlayer', 'GreedyForker', 'ExploreExploitPlayer'), size=(35, 10),default_value='GreedyPlayer', key="player1", enable_events=True)],
             [sg.Input(key="gene1", visible = False)],
             [sg.Slider(range=(1, 100), orientation = 'h', size = (34,20), default_value = 10, resolution=1, key="gene1l", visible=False)],
             [sg.Text('Select Player 2', font=("Helvetica", 10))],    

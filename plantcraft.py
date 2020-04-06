@@ -70,11 +70,14 @@ playersDict = {"Human Player":HumanPlayer, "RandomPlayer":RandomPlayer, "GreedyP
 
 class Window(pyglet.window.Window):
 
+    
+
     def __init__(self, *args, **kwargs):
         super(Window, self).__init__(*args, **kwargs)
 
         # Whether or not the window exclusively captures the mouse.
         self.exclusive = False
+        self.done = False
 
         # Strafing is moving lateral to the direction you are facing,
         # e.g. moving to the left or right while continuing to face forward.
@@ -141,6 +144,7 @@ class Window(pyglet.window.Window):
         self.rootSystems = []
         self.players = []
 
+
         if (settings.REPLAY):
             while (moves[self.pos] != "True" and moves[self.pos] != "False"):
                 if (moves[self.pos] == "R"):
@@ -171,6 +175,9 @@ class Window(pyglet.window.Window):
                         self.players.append(player(self.rootSystems[i], self, p))
                 i += 1
 
+        print(self.players)
+
+
         self.currentPlayerIndex = -1
         #drop all the already-read moves from memory.
         if settings.REPLAY: self.moves = moves[self.pos:]
@@ -197,6 +204,7 @@ class Window(pyglet.window.Window):
             pyglet.clock.schedule_interval(self.update, 1.0 / (TICKS_PER_SEC*10000))
 
         self.nextTurn()
+
         
         #self.alive = 1
 
@@ -215,6 +223,7 @@ class Window(pyglet.window.Window):
             self.currentPlayerIndex += 1
             if self.currentPlayerIndex >= len(self.players):
                 self.currentPlayerIndex = 0
+            print(str(self.currentPlayer()) + "(" + str(self.currentPlayerIndex) + ")")
             self.players[self.currentPlayerIndex].takeTurn()
             if (settings.LOGENABLED and not isinstance(self.currentPlayer(), HumanPlayer)): settings.LOG += "(" + str(self.currentPlayerIndex) + ")"
 
@@ -247,6 +256,7 @@ class Window(pyglet.window.Window):
         return (dx, dy, dz)
 
     def update(self, dt):
+        if self.done: return
         """ This method is scheduled to be called repeatedly by the pyglet
         clock.
 
@@ -257,8 +267,6 @@ class Window(pyglet.window.Window):
 
         """
         #self.rootSystem.process_queue()
-        if not GFX:
-            self.nextTurn()
         self.world.process_entire_queue()
         m = 8
         dt = min(dt, 0.2)
@@ -266,6 +274,11 @@ class Window(pyglet.window.Window):
             self._update(dt / m)
         if (not isinstance(self.currentPlayer(), HumanPlayer)):
             self.nextTurn()
+        if (self.currentPlayer().rootSystem.energy == 0):
+            print("Player " + str(self.currentPlayerIndex) + "(" + str(self.currentPlayer()) + ") has lost game " + str(self.id))
+            self.done = True
+            pyglet.app.exit()
+            return
 
     def _update(self, dt):
         """ Private implementation of the `update()` method. This is where most
@@ -564,13 +577,15 @@ def main(settings=None):
 
     #adjust_settings(settings, TWODMODE)
     #print(TWODMODE)
-
-    window = Window(width=800, height=600, caption='PlantCraft', resizable=True)
-    # Hide the mouse cursor and prevent the mouse from leaving the window.
-    if GFX: window.set_exclusive_mouse(True)
-    setup()
-    pyglet.app.run()
-    window.close()
+    for i in range(10):
+        window = Window(width=800, height=600, caption='PlantCraft', resizable=True)
+        window.id = i
+        GAMEOVER = False
+        # Hide the mouse cursor and prevent the mouse from leaving the window.
+        if GFX: window.set_exclusive_mouse(True)
+        setup()
+        pyglet.app.run()
+        window.close()
     return 0
     #print('returning zero')
     #return 0
