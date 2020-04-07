@@ -5,6 +5,7 @@ import math
 import random
 import time
 import re
+import numpy as np
 
 from collections import deque
 from pyglet import image
@@ -869,6 +870,83 @@ class ExploreExploitPlayer(Player):
         move = random.choice(newmoves)
         self.rootSystem.addToTip(move[0],move[1], fork)
 
+
+class DirectionsPlayer(Player):
+    def __init__(self, rootSystem, window, genes, gene_length):
+        super().__init__(rootSystem, window)
+        self.rootSystem.tipTex=TEXTURES[3]
+        self.genestrand = genes
+        self.gene_length = gene_length
+        self.traits = []
+        self.readGenes()
+        self.probabilities = []
+        self.prob_order = []
+    
+    # read gene strand
+    def readGenes(self):
+        # finds the count of alleles in a gene
+        for i in range(int((len(self.genestrand))/self.gene_length)):
+            count = 0
+            for j in range(self.gene_length):
+                if self.genestrand[j] == '1':
+                    count += 1
+            self.traits.append(count)
+        
+        # read gene strand for this particular player and determine probabilities
+    def determineLikelihood(self):
+        #probRight 
+        self.probabilities.append(random.randint(0, self.traits[0])) #x+1, y, z
+        #probLeft 
+        self.probabilities.append(random.randint(0, self.traits[1])) #x-1, y, z
+        # probForward 
+        self.probabilities.append(random.randint(0, self.traits[2])) #x, y, z+1
+        # probBackward 
+        self.probabilities.append(random.randint(0, self.traits[3])) #x, y, z-1
+        # probDown
+        self.probabilities.append(random.randint(0, self.traits[4])) #x, y-1, z
+        # probUp
+        self.probabilities.append(random.randint(0, self.traits[5])) #x, y+1, z
+        # probFork 
+        self.probabilities.append(random.randint(0, self.traits[6]))
+        self.prob_order = np.argsort(self.probabilities) #use probabilities back to front and loop through 
+        return self.prob_order
+        
+    def takeTurn(self):
+        #choose a move based on the likelihood
+        moves_order = self.determineLikelihood()
+        set_move = 0
+        index = random.randint(1, len(self.rootSystem.tipPositions)-1)
+        # while a move is possible and has not been taken
+        for i in reversed(moves_order):
+            if(set_move==1):
+                break
+            if(moves_order[i]==0):
+                set_move = self._move(index,(1,0,0),False)
+            if(moves_order[i]==1):
+                set_move = self._move(index,(-1,0,0),False)
+            if(moves_order[i]==2):
+                set_move = self._move(index,(0,1,0),False)
+            if(moves_order[i]==3):
+                set_move = self._move(index,(0,-1,0),False)
+            if(moves_order[i]==4):
+                set_move = self._move(index,(0,0,1),False)
+            if(moves_order[i]==5):
+                set_move = self._move(index,(0,0,-1),False)
+            if(moves_order[i]==6):
+                set_move = self._move(index,(0,1,0),True)
+
+
+    def _move(self, index, adding, fork):
+        move = ((self.rootSystem.tipPositions[index][0])+(adding[0]),(self.rootSystem.tipPositions[index][1])+(adding[1]), (self.rootSystem.tipPositions[index][2])+(adding[2]))
+        if self.rootSystem.addToTip(self.rootSystem.tipPositions[index], move, fork):
+            if fork:
+                self.rootSystem.tipPositions.append(move)
+            else:
+                self.rootSystem.tipPositions[index] = move
+            return 1
+        else:
+            return 0
+
 class Window(pyglet.window.Window):
 
     def __init__(self, *args, **kwargs):
@@ -959,8 +1037,8 @@ class Window(pyglet.window.Window):
             # PLAYER ASSIGNMENT HAPPENS HERE
             for i in range(2):
                 self.rootSystems.append(RootSystem(self.world, (10*i,0,0) ))
-            self.players.append(ExploreExploitPlayer(self.rootSystems[0], self, "11111111110000000000", 10))#made this a greedy player
-            self.players.append(ExploreExploitPlayer(self.rootSystems[1], self, "00000000001111111111", 10))
+            self.players.append(RandomPlayer(self.rootSystems[0], self))#, "1111111111000000000000000000000000000000000000000000000000000000000000", 10))#made this a greedy player
+            self.players.append(DirectionsPlayer(self.rootSystems[1], self, "1010001010101010100010101010101010101000101010101010001010101111111111", 10))
 
         self.currentPlayerIndex = -1
         #drop all the already-read moves from memory.
