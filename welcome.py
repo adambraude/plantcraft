@@ -26,11 +26,13 @@ def _settings():
             [sg.Checkbox('Replay?', size=(10,1), default=False, key="replay")],
             [sg.Text('File', size=(8, 1)), sg.Input(key="replayf"), sg.FileBrowse()],
 
+            [sg.Text('Select a nutrient clustering mode', font=("Helvetica", 10))],
+            [sg.InputCombo(('None', 'Chunk', 'Layered'), size=(35, 10), default_value='Chunk', key="n0", enable_events=True)],
             [sg.Text('Select nutrient density... (10 ==> ~10% of blocks are nutrients)', font=("Helvetica", 10))],
             [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 1.2, resolution=0.1, key="density")],
-            [sg.Text('Select nutrient clustering (higher->more clustering)', font=("Helvetica", 10))],
+            [sg.Text('Select chunk variance (higher->more variance)             ', font=("Helvetica", 10), key="n1")],
             [sg.Slider(range=(0, 1), orientation = 'h', size = (34,20), default_value = 0.2, resolution=0.01, key="cluster")],
-            [sg.Text('Select nutrient clustering passes (more->larger clusters)', font=("Helvetica", 10))],
+            [sg.Text('Select chunk size                       ', font=("Helvetica", 10), key="n2")],
             [sg.Slider(range=(0, 10), orientation = 'h', size = (34,20), default_value = 3, resolution=1, key="clusterp")],
 
             # Allow nutrient proximity?
@@ -89,7 +91,7 @@ def _settings():
                 players.append({"type":values["player2"]})
             out = { "players":players, "mode":values["mode"], "PROX":values["proxy"], "PROX_RANGE":values["proxydist"], 
                     "DENSITY":values["density"], "STARTE":values["starte"], "FORK":values["fork"], "REWARD":values["reward"], 
-                    "REPLAY":values["replay"], "REPLAYFILE":values["replayf"], "CLUSTER":values["cluster"], "CLUSTERP":values["clusterp"]}
+                    "REPLAY":values["replay"], "REPLAYFILE":values["replayf"], "CLUSTER":values["cluster"], "CLUSTERP":values["clusterp"], "CLUSTERTYPE":values["n0"]}
             print(out)
             window.close()
             return out
@@ -98,6 +100,16 @@ def _settings():
             return None
         window['proxydist'].Update(visible = values["proxy"])
         window['proxydistlabel'].Update(visible = values["proxy"])
+        if values['n0'] == "None":
+            window['n1'].Update("irrelevant")
+            window['n2'].Update("irrelevant")
+        elif values['n0'] == "Chunk":
+            window['n1'].Update("Select chunk variance (higher->more variance)")
+            window['n2'].Update("Select chunk size")
+        elif values['n0'] == "Layered":
+            window['n1'].Update("Select nutrient clustering (higher->more clustering)")
+            window['n2'].Update("Select nutrient clustering passes (more->larger clusters)")
+
         if values['player1'] == "ExploreExploitPlayer":
             window['gene1'].Update(visible = True)
             window['gene1l'].Update(visible = True)

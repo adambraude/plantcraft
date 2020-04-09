@@ -16,6 +16,7 @@ class World(object):
         self.density = settings.DENSITY
         self.cluster = settings.CLUSTER
         self.clusterp = settings.CLUSTERP
+        self.clustert = settings.CLUSTERTYPE
         self.set = settings
         # A Batch is a collection of vertex lists for batched rendering.
         self.batch = pyglet.graphics.Batch()
@@ -50,10 +51,21 @@ class World(object):
 
         """
         if self.set.REPLAY: return
-        if self.mode:
-            self.addClusterNutrients(self.density/100, (-40, 40, 0, 1, -40, 40), self.cluster, self.clusterp)
-        else:
-            self.addClusterNutrients(self.density/100, (-20, 20, -20, 0, -20, 20), self.cluster, self.clusterp)
+        if (self.clustert == "None"):
+            if self.mode:
+                self.addNutrients(self.density/100, (-40, 40, 0, 1, -40, 40))
+            else:
+                self.addNutrients(self.density/100, (-20, 20, -20, 0, -20, 20))
+        elif (self.clustert == "Layered"):
+            if self.mode:
+                self.addClusterNutrients(self.density/100, (-40, 40, 0, 1, -40, 40), self.cluster, self.clusterp)
+            else:
+                self.addClusterNutrients(self.density/100, (-20, 20, -20, 0, -20, 20), self.cluster, self.clusterp)
+        elif (self.clustert == "Chunk"):
+            if self.mode:
+                self.addChunkNutrients(self.density/100, (-40, 40, 0, 1, -40, 40), self.cluster, self.clusterp)
+            else:
+                self.addChunkNutrients(self.density/100, (-20, 20, -20, 0, -20, 20), self.cluster, self.clusterp)
 
     @staticmethod
     def modByDirection(start, direc):

@@ -44,6 +44,8 @@ class Settings:
         else: self.CLUSTER = 5
         if given["CLUSTERP"]: self.CLUSTERP = int(given["CLUSTERP"])
         else: self.CLUSTERP = 3
+        if given["CLUSTERTYPE"]: self.CLUSTERTYPE = given["CLUSTERTYPE"]
+        else: self.CLUSTERP = "None"
         if given["players"]: self.players = given["players"]
         else: self.players = ["Human Player", "RandomPlayer"]
 
