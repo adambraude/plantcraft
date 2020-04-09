@@ -169,7 +169,7 @@ class World(object):
         self.world[position] = texture
         #self.sectors.setdefault(sectorize(position), []).append(position)
         if immediate:
-            if self.exposed(position):
+            #if self.exposed(position):
                 self.show_block(position)
             #self.check_neighbors(position)
 

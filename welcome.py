@@ -27,7 +27,7 @@ def _settings():
             [sg.Text('File', size=(8, 1)), sg.Input(key="replayf"), sg.FileBrowse()],
 
             [sg.Text('Select nutrient density... (10 ==> ~10% of blocks are nutrients)', font=("Helvetica", 10))],
-            [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 3, resolution=0.1, key="density")],
+            [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 1.2, resolution=0.1, key="density")],
             [sg.Text('Select nutrient clustering (higher->more clustering)', font=("Helvetica", 10))],
             [sg.Slider(range=(0, 1), orientation = 'h', size = (34,20), default_value = 0.2, resolution=0.01, key="cluster")],
             [sg.Text('Select nutrient clustering passes (more->larger clusters)', font=("Helvetica", 10))],
