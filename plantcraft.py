@@ -14,7 +14,7 @@ from pyglet.window import key, mouse
 import welcome
 #[player1, player2, [density, proximity?, prox distance, graphics mode]]
 #['Human Player', 'None', [28.0, False, 5.0, '3D mode']]
-all_settings = ['Human Player', 'None', [10.0, False, 5.0, '3D mode']]
+all_settings = ['Human Player', 'None', [5.0, False, 5.0, '3D mode']]
 if len(sys.argv)>1:
     all_settings = welcome.main()
 
@@ -47,6 +47,10 @@ DIRECTIONS = (key.N, key.S, key.W, key.E, key.U, key.D)
 NUM_KEYS = (key._1, key._2, key._3, key._4, key._5, key._6, key._7, key._8, key._9, key._0)
 
 TEXTURE_PATH = "roots.png"
+
+#END = 'death'
+END = 'points'
+WIN_POINTS = 1000
 
 #def adjust_settings(settings, TWODMODE):
 #    if settings[2][3] == '2D mode':
@@ -407,14 +411,16 @@ class RootSystem(object):
         self.blocks = {}
         self.tips = {}
 
-        if (not REPLAY): self._initialize(position)
+        self.position = position
+
+        if (not REPLAY): self._initialize()
 
 
-    def _initialize(self, position):
+    def _initialize(self):
         """ Initialize the world by placing all the blocks.
 
         """
-        x,y,z = position
+        x,y,z = self.position
         global LOG
         if (LOGENABLED): LOG += "\n (R," + str(x)+ "," + str(y) + "," + str(z) + ",E:" + str(self.energy) + ")"
         self.tipPositions = [None, (x-1,y,z), (x+1,y,z), (x,y,z+1),(x,y,z-1)]
@@ -426,9 +432,9 @@ class RootSystem(object):
             self.initProx()
 
         self.add_block((x,y,z), TEXTURES[0])
-        for i in range(1,6):
-            self.add_block((x,y+i,z), STALK_TEXTURE)
-            if (LOGENABLED): LOG += "\n (S," + str(x)+ "," + str(y+i) + "," + str(z) + ")"
+        #for i in range(1,6):
+        #    self.add_block((x,y+i,z), STALK_TEXTURE)
+        #    if (LOGENABLED): LOG += "\n (S," + str(x)+ "," + str(y+i) + "," + str(z) + ")"
 
     def initProx(self):
         for t in self.tips.keys():
@@ -567,7 +573,7 @@ class RootSystem(object):
 
         return moves
 
-    def remove_block(self, position, immediate=True):
+    def remove_block(self, position):
         """ Remove the block at the given `position`.
 
         Parameters
@@ -579,7 +585,6 @@ class RootSystem(object):
 
         """
         del self.blocks[position]
-        self.world.add_block(position,texture,immediate)
 
     def hit_test(self, position, vector, max_distance=8, ignore=[]):
         """ Line of sight search from current position. If a block is
@@ -813,6 +818,7 @@ class Window(pyglet.window.Window):
                 self.pos = i
         self.rootSystems = []
         self.players = []
+        self.stalks = []
 
         if (REPLAY):
             while (moves[self.pos] != "True" and moves[self.pos] != "False"):
@@ -837,6 +843,7 @@ class Window(pyglet.window.Window):
         else:
             for i in range(2):
                 self.rootSystems.append(RootSystem(self.world, (10*i,0,0) ))
+                self.stalks.append(0)
             self.players.append(GreedyPlayer(self.rootSystems[0], self))
             self.players.append(GreedyForker(self.rootSystems[1], self))
 
@@ -877,12 +884,34 @@ class Window(pyglet.window.Window):
             self.currentPlayerIndex += 1
             if self.currentPlayerIndex >= len(self.players):
                 self.currentPlayerIndex = 0
-            self.players[self.currentPlayerIndex].takeTurn()
+            self.currentPlayer().takeTurn()
             global LOG
             if (LOGENABLED and not isinstance(self.currentPlayer(), HumanPlayer)): LOG += "(" + str(self.currentPlayerIndex) + ")"
+        self.updateStalks()
 
     def currentPlayer(self):
         return self.players[self.currentPlayerIndex]
+
+    def checkEnd(self):
+        if END == "death":
+            for system in self.rootSystems:
+                if system.energy <= 0:
+                    return True
+        elif END == "points":
+            for system in self.rootSystems:
+                if system.energy >= WIN_POINTS:
+                    return True
+        return False
+
+    def updateStalks(self):
+        if self.currentPlayer().rootSystem.energy >= (self.stalks[self.currentPlayerIndex]+1) * (WIN_POINTS/11):
+            self.stalks[self.currentPlayerIndex] += 1
+            x, y, z = self.currentPlayer().rootSystem.position
+            self.currentPlayer().rootSystem.add_block((x,y+self.stalks[self.currentPlayerIndex],z), STALK_TEXTURE)
+        elif self.currentPlayer().rootSystem.energy < self.stalks[self.currentPlayerIndex] * (WIN_POINTS/11):
+            x, y, z = self.currentPlayer().rootSystem.position
+            self.currentPlayer().rootSystem.world.remove_block((x,y+self.stalks[self.currentPlayerIndex],z))
+            self.stalks[self.currentPlayerIndex] -= 1
 
     def set_exclusive_mouse(self, exclusive):
         """ If `exclusive` is True, the game will capture the mouse, if False
@@ -926,7 +955,8 @@ class Window(pyglet.window.Window):
         for _ in xrange(m):
             self._update(dt / m)
         if (not isinstance(self.currentPlayer(), HumanPlayer)):
-            self.nextTurn()
+            if not self.checkEnd():
+                self.nextTurn()
 
     def _update(self, dt):
         """ Private implementation of the `update()` method. This is where most
