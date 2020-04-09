@@ -19,7 +19,7 @@ def flip(string):
 
 def _point_mutation(string1, string2):
     # mutate random spots
-    changes = random.randint(0,5)
+    changes = random.randint(0,1)
     for i in range(changes):
         string1 = flip(string1)
         string2 = flip(string2)
@@ -59,8 +59,8 @@ def _crossover(string1, string2, gene_length):
 def _make_babies(string1, string2, gene_length):
     child1, child2 = _crossover(string1, string2, gene_length)
     child1, child2 = _point_mutation(child1, child2)
-    print(child1)
-    print(child2)
+    #print(child1)
+    #print(child2)
     return child1, child2
  
     
@@ -69,13 +69,6 @@ _make_babies("0000000000000000", "1111111111111111", 4)
 #_point_mutation("0000000000000000000000", "1111111111111111111111")
 
 
-class ExploreExploitPlayer(Player, genes):
-    def __init__(self, rootSystem, window, genes):
-        super().__init__(rootSystem, window)
-        self.rootSystem.tipTex=TEXTURES[3]
-        self.genestrand = genes
-    
-    def takeTurn(self):
         #determine if in explore or exploit mode
         
         #call the correct play turn based on the information from the string

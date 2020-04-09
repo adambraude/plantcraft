@@ -43,6 +43,9 @@ class Settings:
         if given["players"]: self.players = given["players"]
         else: self.players = ["Human Player", "RandomPlayer"]
 
+    def setPlayers(self, players):
+        self.players = players
+
 
     def cube_vertices(self,x, y, z, n):
         """ Return the vertices of the cube at position x, y, z with size 2*n.

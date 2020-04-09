@@ -136,7 +136,7 @@ class ExploreExploitPlayer(Player):
         for i in range(int((len(self.genestrand))/self.gene_length)):
             count = 0
             for j in range(self.gene_length):
-                if self.genestrand[j] == '1':
+                if self.genestrand[j+i*self.gene_length] == '1':
                     count += 1
             self.traits.append(count)
         
