@@ -719,24 +719,27 @@ class ExploreExploitPlayer(Player):
         self.gene_length = gene_length
         self.traits = []
         self.readGenes()
+        
     
     # read gene strand
     def readGenes(self):
         # finds the count of alleles in a gene
         for i in range(int((len(self.genestrand))/self.gene_length)):
             count = 0
-            for j in range((self.gene_length*i)+j):
-                if self.genestrand[j] == '1':
+            for j in range(self.gene_length):
+                if self.genestrand[(self.gene_length*i)+j] == '1':
                     count += 1
             self.traits.append(count)
+            self.traits.append(self.gene_length-count)
+            i+=1
         
         # read gene strand for this particular player and determine probabilities
     def determineLikelihood(self):
         # runs the probabilities based on allele counts in genes
-        probExplore = random.randint(0, self.traits[0])
-        probExploit = random.randint(0, self.traits[1])
+        #probExplore = random.randint(0, self.traits[0])
+        #probExploit = random.randint(0, self.traits[1])
         
-        if probExplore > probExploit:
+        if random.randint(1, self.gene_length) > self.traits[0]:#if exploit > explore 
             return 0
         else:
             return 1
@@ -1040,8 +1043,8 @@ class Window(pyglet.window.Window):
             # PLAYER ASSIGNMENT HAPPENS HERE
             for i in range(2):
                 self.rootSystems.append(RootSystem(self.world, (10*i,0,0) ))
-            self.players.append(RandomPlayer(self.rootSystems[0], self))#, "1111111111000000000000000000000000000000000000000000000000000000000000", 10))#made this a greedy player
-            self.players.append(DirectionsPlayer(self.rootSystems[1], self, "111111111010101010001010101011", 10))
+            self.players.append(ExploreExploitPlayer(self.rootSystems[0], self,"0000111111", 10))#, "1111111111000000000000000000000000000000000000000000000000000000000000", 10))#made this a greedy player
+            self.players.append(ExploreExploitPlayer(self.rootSystems[1], self, "1111000000", 10))#"111111111010101010001010101011", 10))
 
         self.currentPlayerIndex = -1
         #drop all the already-read moves from memory.
