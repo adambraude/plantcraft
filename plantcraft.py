@@ -725,7 +725,7 @@ class ExploreExploitPlayer(Player):
         # finds the count of alleles in a gene
         for i in range(int((len(self.genestrand))/self.gene_length)):
             count = 0
-            for j in range(self.gene_length):
+            for j in range((self.gene_length*i)+j):
                 if self.genestrand[j] == '1':
                     count += 1
             self.traits.append(count)
@@ -888,9 +888,12 @@ class DirectionsPlayer(Player):
         for i in range(int((len(self.genestrand))/self.gene_length)):
             count = 0
             for j in range(self.gene_length):
-                if self.genestrand[j] == '1':
+                if self.genestrand[(self.gene_length*i)+j] == '1':
                     count += 1
             self.traits.append(count)
+            self.traits.append(self.gene_length-count)
+            i+=1
+            print(self.traits)
         
         # read gene strand for this particular player and determine probabilities
     def determineLikelihood(self):
@@ -907,7 +910,7 @@ class DirectionsPlayer(Player):
         # probUp
         self.probabilities.append(random.randint(0, self.traits[5])) #x, y+1, z
         # probFork 
-        self.probabilities.append(random.randint(0, self.traits[6]))
+        #self.probabilities.append(random.randint(0, self.traits[6]))
         self.prob_order = np.argsort(self.probabilities) #use probabilities back to front and loop through 
         return self.prob_order
         
@@ -932,8 +935,8 @@ class DirectionsPlayer(Player):
                 set_move = self._move(index,(0,0,1),False)
             if(moves_order[i]==5):
                 set_move = self._move(index,(0,0,-1),False)
-            if(moves_order[i]==6):
-                set_move = self._move(index,(0,1,0),True)
+            #if(moves_order[i]==6):
+            #    set_move = self._move(index,(0,1,0),True)
 
 
     def _move(self, index, adding, fork):
@@ -1038,7 +1041,7 @@ class Window(pyglet.window.Window):
             for i in range(2):
                 self.rootSystems.append(RootSystem(self.world, (10*i,0,0) ))
             self.players.append(RandomPlayer(self.rootSystems[0], self))#, "1111111111000000000000000000000000000000000000000000000000000000000000", 10))#made this a greedy player
-            self.players.append(DirectionsPlayer(self.rootSystems[1], self, "1010001010101010100010101010101010101000101010101010001010101111111111", 10))
+            self.players.append(DirectionsPlayer(self.rootSystems[1], self, "111111111010101010001010101011", 10))
 
         self.currentPlayerIndex = -1
         #drop all the already-read moves from memory.
