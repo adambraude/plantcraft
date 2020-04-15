@@ -19,6 +19,7 @@ import settings as set
 import crossover
 #[player1, player2, [density, proximity?, prox distance, graphics mode]]
 #['Human Player', 'None', [28.0, False, 5.0, '3D mode']]
+
 all_settings = {}
 all_settings = welcome.main()
 
@@ -30,6 +31,11 @@ SPEED = 15
 DEGREES= u'\N{DEGREE SIGN}'
 DIRECTIONS = (key.N, key.S, key.W, key.E, key.U, key.D)
 NUM_KEYS = (key._1, key._2, key._3, key._4, key._5, key._6, key._7, key._8, key._9, key._0)
+
+
+#END = 'death'
+END = 'points'
+WIN_POINTS = 1000
 
 #def adjust_settings(settings, TWODMODE):
 #    if settings[2][3] == '2D mode':
@@ -66,6 +72,7 @@ def printLog(filename = "logfile"):
 
 settings = set.Settings(all_settings)
 playersDict = {"Human Player":HumanPlayer, "RandomPlayer":RandomPlayer, "GreedyPlayer":GreedyPlayer, "GreedyForker":GreedyForker, "ExploreExploitPlayer":ExploreExploitPlayer}
+
 
 class Window(pyglet.window.Window):
 
@@ -138,21 +145,23 @@ class Window(pyglet.window.Window):
                 y = int(moves[i+2])
                 z = int(moves[i+3])
                 self.world.add_block((x,y,z), settings.TEXTURES[int(moves[i])])
-                self.world.nutrients.append((x,y,z))
+                self.world.nutrients[x,y,z] = True
                 if settings.PROX:
                     self.world.hide_block((x, y, z))
                 self.pos = i
         self.rootSystems = []
         self.players = []
+        self.stalks = []
 
 
         if (settings.REPLAY):
             while (moves[self.pos] != "True" and moves[self.pos] != "False"):
                 if (moves[self.pos] == "R"):
-                    rip = RootSystem(self.world, (moves[self.pos+1],moves[self.pos+2],moves[self.pos+3]), settings.TWODMODE)
+                    rip = RootSystem(self.world, (int(moves[self.pos+1]),int(moves[self.pos+2]),int(moves[self.pos+3])), settings.TWODMODE)
                     rip.energy = int(float(moves[self.pos+4][2:]))
                     self.rootSystems.append(rip)
                     self.players.append(Player(self.rootSystems[len(self.rootSystems)-1], self, {}))
+                    self.stalks.append(0)
                     self.pos += 5
                 elif (moves[self.pos] == "T"):
                     rip.add_block((int(float(moves[self.pos+1])),int(float(moves[self.pos+2])),int(float(moves[self.pos+3]))),rip.absorb[len(rip.absorb)-1])
@@ -174,8 +183,8 @@ class Window(pyglet.window.Window):
                     if player is not None:
                         self.rootSystems.append(RootSystem(self.world, (10*i,0,0),settings.TWODMODE))
                         self.players.append(player(self.rootSystems[i], self, p))
-                i += 1
-
+                        self.stalks.append(0)
+                        i += 1
 
         self.currentPlayerIndex = -1
         #drop all the already-read moves from memory.
@@ -205,23 +214,45 @@ class Window(pyglet.window.Window):
     def nextTurn(self):
         if (settings.REPLAY):
             if self.pos >= len(self.moves): return
-            print(self.pos)
             while(self.moves[self.pos] != "True" and self.moves[self.pos] != "False"):
                 self.pos += 1
                 if self.pos >= len(self.moves): return
+            print(self.pos)
             if self.moves[self.pos] == "True": fork = True
             else: fork = False
             self.players[int(self.moves[self.pos+8])].rootSystem.addToTip((int(self.moves[self.pos+1]),int(self.moves[self.pos+2]),int(self.moves[self.pos+3])),(int(self.moves[self.pos+4]),int(self.moves[self.pos+5]),int(self.moves[self.pos+6])),fork)
-            self.pos +=7
+            self.pos +=6
         else:
             self.currentPlayerIndex += 1
             if self.currentPlayerIndex >= len(self.players):
                 self.currentPlayerIndex = 0
             self.players[self.currentPlayerIndex].takeTurn()
             if (settings.LOGENABLED and not isinstance(self.currentPlayer(), HumanPlayer)): settings.LOG += "(" + str(self.currentPlayerIndex) + ")"
+            self.currentPlayer().takeTurn()
+        self.updateStalks()
 
     def currentPlayer(self):
         return self.players[self.currentPlayerIndex]
+
+    def checkEnd(self):
+        for system in self.rootSystems:
+            if system.energy <= 0:
+                return True
+            if system.energy >= WIN_POINTS:
+                return True
+        if not self.world.nutrients:
+            return True       
+        return False
+
+    def updateStalks(self):
+        if self.currentPlayer().rootSystem.energy >= (self.stalks[self.currentPlayerIndex]+1) * (WIN_POINTS/11):
+            self.stalks[self.currentPlayerIndex] += 1
+            x, y, z = self.currentPlayer().rootSystem.position
+            self.currentPlayer().rootSystem.add_block((x,y+self.stalks[self.currentPlayerIndex],z), settings.STALK_TEXTURE)
+        elif self.currentPlayer().rootSystem.energy < self.stalks[self.currentPlayerIndex] * (WIN_POINTS/11):
+            x, y, z = self.currentPlayer().rootSystem.position
+            self.currentPlayer().rootSystem.world.remove_block((x,y+self.stalks[self.currentPlayerIndex],z))
+            self.stalks[self.currentPlayerIndex] -= 1
 
     def set_exclusive_mouse(self, exclusive):
         """ If `exclusive` is True, the game will capture the mouse, if False
@@ -265,50 +296,30 @@ class Window(pyglet.window.Window):
         for _ in set.xrange(m):
             self._update(dt / m)
         if settings.GFX:
-            if (not isinstance(self.currentPlayer(), HumanPlayer)):
-                self.nextTurn()
-            if (len(self.world.nutrients) == 0):
+            if self.checkEnd():
                 self.done = True
-                mini = self.rootSystems[0].energy
                 maxi = self.rootSystems[0].energy
-                self.loser = 0
+                self.winner = 0
                 for i in range(len(self.rootSystems)):
                     if self.rootSystems[i].energy > maxi:
                         maxi = self.rootSystems[i].energy
-                    if self.rootSystems[i].energy < mini:
-                        mini = self.rootSystems[i].energy
-                        self.loser = i
-                return
-            if (self.currentPlayer().rootSystem.energy == 0):
-                #print("Player " + str(self.currentPlayerIndex) + " (" + str(self.currentPlayer()) + ") has lost game " + str(self.id))
-                self.done = True
-                self.loser = self.currentPlayerIndex
-                if not settings.GFX: pyglet.app.exit()
-                return
+                        self.winner = i
+            else:
+                if (not isinstance(self.currentPlayer(), HumanPlayer)):
+                    self.nextTurn()
         else:
             while(not self.done):
-                self.nextTurn()
-                if (len(self.world.nutrients) == 0):
+                if self.checkEnd():
                     self.done = True
-                    mini = self.rootSystems[0].energy
                     maxi = self.rootSystems[0].energy
-                    self.loser = 0
+                    self.winner = 0
                     for i in range(len(self.rootSystems)):
                         if self.rootSystems[i].energy > maxi:
                             maxi = self.rootSystems[i].energy
-                        if self.rootSystems[i].energy < mini:
-                            mini = self.rootSystems[i].energy
-                            self.loser = i
-                    #print("losing player " + str(self.loser) + " had " + str(mini) + " energy but winner had " + str(maxi))
-                    if not settings.GFX: pyglet.app.exit()
-                    return
-                if (self.currentPlayer().rootSystem.energy == 0):
-                    #print("Player " + str(self.currentPlayerIndex) + " (" + str(self.currentPlayer()) + ") has lost game " + str(self.id))
-                    self.done = True
-                    self.loser = self.currentPlayerIndex
-                    #print("world had " + str(len(self.world.nutrients)) + " remaining when player " + str(self.loser) + " lost")
-                    if not settings.GFX: pyglet.app.exit()
-                    return
+                            self.winner = i
+                    pyglet.app.exit()
+                else:
+                    self.nextTurn()
 
     def _update(self, dt):
         """ Private implementation of the `update()` method. This is where most
@@ -616,21 +627,21 @@ def main():
         window.close()
 
     if mode == 1:
-        numGames = 200
+        numGames = 100
         settings.GFX = False
         window = Window(width=0, height=0, caption='PlantCraft', resizable=False)
-        losses = [0,0]
+        wins = [0,0]
         for i in range(numGames):
             window.id = i
             # Hide the mouse cursor and prevent the mouse from leaving the window.
             setup()
             pyglet.app.run()
-            losses[window.loser]+=1
+            wins[window.winner]+=1
             window.init()
         window.close()
         end = time.time()
-        print("Player 1 wins: " + str(numGames-losses[1]))
-        print("Player 2 wins: " + str(numGames-losses[0]))
+        print("Player 1 wins: " + str(wins[0]))
+        print("Player 2 wins: " + str(wins[1]))
 
     if mode == 2:
         window = Window(width=0, height=0, caption='PlantCraft', resizable=False)
@@ -657,7 +668,7 @@ def main():
                     # Hide the mouse cursor and prevent the mouse from leaving the window.
                     setup()
                     pyglet.app.run()
-                    if window.loser == 1:
+                    if window.winner == 0:
                         fitness[i]+=1
                     else:
                         fitness[j]+=1
