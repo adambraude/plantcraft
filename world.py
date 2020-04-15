@@ -66,7 +66,6 @@ class World(object):
                 self.addChunkNutrients(self.density/100, (-40, 40, 0, 1, -40, 40), self.cluster, self.clusterp)
             else:
                 self.addChunkNutrients(self.density/100, (-20, 20, -20, 0, -20, 20), self.cluster, self.clusterp)
-        print("initialized world with " + str(len(self.nutrients)) + " nutrients")
 
     @staticmethod
     def modByDirection(start, direc):

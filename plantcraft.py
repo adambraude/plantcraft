@@ -152,6 +152,7 @@ class Window(pyglet.window.Window):
         self.rootSystems = []
         self.players = []
         self.stalks = []
+        self.turnCount = 0
 
 
         if (settings.REPLAY):
@@ -212,6 +213,7 @@ class Window(pyglet.window.Window):
         #self.alive = 1
 
     def nextTurn(self):
+        self.turnCount += 1
         if (settings.REPLAY):
             if self.pos >= len(self.moves): return
             while(self.moves[self.pos] != "True" and self.moves[self.pos] != "False"):
@@ -237,10 +239,13 @@ class Window(pyglet.window.Window):
     def checkEnd(self):
         for system in self.rootSystems:
             if system.energy <= 0:
+                self.end = "death"
                 return True
             if system.energy >= WIN_POINTS:
+                self.end = "win"
                 return True
         if not self.world.nutrients:
+            self.end = "sweep"
             return True       
         return False
 
@@ -304,6 +309,7 @@ class Window(pyglet.window.Window):
                     if self.rootSystems[i].energy > maxi:
                         maxi = self.rootSystems[i].energy
                         self.winner = i
+
             else:
                 if (not isinstance(self.currentPlayer(), HumanPlayer)):
                     self.nextTurn()
@@ -313,10 +319,14 @@ class Window(pyglet.window.Window):
                     self.done = True
                     maxi = self.rootSystems[0].energy
                     self.winner = 0
+                    self.stats = {"energy":[]}
                     for i in range(len(self.rootSystems)):
-                        if self.rootSystems[i].energy > maxi:
-                            maxi = self.rootSystems[i].energy
+                        e = self.rootSystems[i].energy
+                        self.stats["energy"].append(e)
+                        if e > maxi:
+                            maxi = e
                             self.winner = i
+                            
                     pyglet.app.exit()
                 else:
                     self.nextTurn()
@@ -646,19 +656,22 @@ def main():
     if mode == 2:
         window = Window(width=0, height=0, caption='PlantCraft', resizable=False)
         numPlayers = 10
-        numGenerations = 15
+        numGenerations = 10
         currentGeneration = []
         for i in range(numPlayers):
             genome = ""
-            for j in range(20):
+            for j in range(10):
                 if (random.random() > 0.5):
-                    genome += "1"
+                    genome += "11"
                 else:
-                    genome += "0"
+                    genome += "00"
             currentGeneration.append({"type":"ExploreExploitPlayer", "genes":genome, "gene_length":10})
         settings.GFX = False
         for g in range(numGenerations):
             fitness = [0 for g in currentGeneration]
+            energy = [0 for g in currentGeneration]
+            ends = {"win":0, "sweep":0, "death":0}
+            turns = 0
             for i in range(len(currentGeneration)):
                 for j in range(i+1, len(currentGeneration)):
                     p1 = currentGeneration[i]
@@ -672,9 +685,14 @@ def main():
                         fitness[i]+=1
                     else:
                         fitness[j]+=1
+                    energy[i] += window.stats["energy"][0]
+                    energy[j] += window.stats["energy"][1]
+                    ends[window.end] += 1
+                    turns += window.turnCount
                     window.init()
             for i in range(len(currentGeneration)):
-                print("Gen " + str(g) + " player " + currentGeneration[i]["genes"] + " fitness: " + str(fitness[i]))
+                print("Gen " + str(g) + " player " + currentGeneration[i]["genes"] + " fitness: " + str(fitness[i]) + " avg end energy: " + str(math.ceil(energy[i]/(len(currentGeneration)-1))))
+            print("Generation total stats: wins: " + str(ends["win"]) + " deaths: " + str(ends["death"]) + " sweeps: " + str(ends["sweep"]) + " avg turns taken: " + str(math.ceil(turns/(2*(len(currentGeneration)-1)))))
             nextGeneration = []
             while len(nextGeneration) < numPlayers:
                 parent1 = random.choices(currentGeneration, weights=fitness, k=1)[0]

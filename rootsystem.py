@@ -59,7 +59,7 @@ class RootSystem(object):
             if newTip in self.world.nutrients:
                 self.energy+=self.world.set.ENERGY_REWARD
                 collectedNutrient = True
-                if self.world.set.PROX: self.nutrients.remove(newTip)
+                if self.world.set.PROX: del self.nutrients[newTip]
             else: return False
 
         if newTip[1] > 0: return False
