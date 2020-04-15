@@ -635,7 +635,7 @@ def main():
     if mode == 2:
         window = Window(width=0, height=0, caption='PlantCraft', resizable=False)
         numPlayers = 10
-        numGenerations = 5
+        numGenerations = 15
         currentGeneration = []
         for i in range(numPlayers):
             genome = ""
