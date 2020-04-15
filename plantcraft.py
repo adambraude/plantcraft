@@ -267,6 +267,18 @@ class Window(pyglet.window.Window):
         if settings.GFX:
             if (not isinstance(self.currentPlayer(), HumanPlayer)):
                 self.nextTurn()
+            if (len(self.world.nutrients) == 0):
+                self.done = True
+                mini = self.rootSystems[0].energy
+                maxi = self.rootSystems[0].energy
+                self.loser = 0
+                for i in range(len(self.rootSystems)):
+                    if self.rootSystems[i].energy > maxi:
+                        maxi = self.rootSystems[i].energy
+                    if self.rootSystems[i].energy < mini:
+                        mini = self.rootSystems[i].energy
+                        self.loser = i
+                return
             if (self.currentPlayer().rootSystem.energy == 0):
                 #print("Player " + str(self.currentPlayerIndex) + " (" + str(self.currentPlayer()) + ") has lost game " + str(self.id))
                 self.done = True
@@ -276,10 +288,25 @@ class Window(pyglet.window.Window):
         else:
             while(not self.done):
                 self.nextTurn()
+                if (len(self.world.nutrients) == 0):
+                    self.done = True
+                    mini = self.rootSystems[0].energy
+                    maxi = self.rootSystems[0].energy
+                    self.loser = 0
+                    for i in range(len(self.rootSystems)):
+                        if self.rootSystems[i].energy > maxi:
+                            maxi = self.rootSystems[i].energy
+                        if self.rootSystems[i].energy < mini:
+                            mini = self.rootSystems[i].energy
+                            self.loser = i
+                    #print("losing player " + str(self.loser) + " had " + str(mini) + " energy but winner had " + str(maxi))
+                    if not settings.GFX: pyglet.app.exit()
+                    return
                 if (self.currentPlayer().rootSystem.energy == 0):
                     #print("Player " + str(self.currentPlayerIndex) + " (" + str(self.currentPlayer()) + ") has lost game " + str(self.id))
                     self.done = True
                     self.loser = self.currentPlayerIndex
+                    #print("world had " + str(len(self.world.nutrients)) + " remaining when player " + str(self.loser) + " lost")
                     if not settings.GFX: pyglet.app.exit()
                     return
 
@@ -576,7 +603,7 @@ def main():
 
     #adjust_settings(settings, TWODMODE)
     #print(TWODMODE)
-    mode = 2
+    mode = settings.whatdo
     start = time.time()
     if mode == 0:
         settings.GFX = True
@@ -607,8 +634,8 @@ def main():
 
     if mode == 2:
         window = Window(width=0, height=0, caption='PlantCraft', resizable=False)
-        numPlayers = 20
-        numGenerations = 100
+        numPlayers = 10
+        numGenerations = 5
         currentGeneration = []
         for i in range(numPlayers):
             genome = ""
@@ -620,30 +647,31 @@ def main():
             currentGeneration.append({"type":"ExploreExploitPlayer", "genes":genome, "gene_length":10})
         settings.GFX = False
         for g in range(numGenerations):
-            winners = []
-            while currentGeneration:
-                p1 = random.choice(currentGeneration)
-                currentGeneration.remove(p1)
-                p2 = random.choice(currentGeneration)
-                currentGeneration.remove(p2)
-                settings.setPlayers([p1,p2])
-                window.id = g
-                # Hide the mouse cursor and prevent the mouse from leaving the window.
-                setup()
-                pyglet.app.run()
-                if window.loser == 1:
-                    winners.append(p1)
-                else:
-                    winners.append(p2)
-                window.init()
-            for w in winners:
-                print("Gen " + str(g) + " winner: " + w["genes"])
-            while len(currentGeneration) < numPlayers:
-                parent1 = random.choice(winners)
-                parent2 = random.choice(winners)
+            fitness = [0 for g in currentGeneration]
+            for i in range(len(currentGeneration)):
+                for j in range(i+1, len(currentGeneration)):
+                    p1 = currentGeneration[i]
+                    p2 = currentGeneration[j]
+                    settings.setPlayers([p1,p2])
+                    window.id = g
+                    # Hide the mouse cursor and prevent the mouse from leaving the window.
+                    setup()
+                    pyglet.app.run()
+                    if window.loser == 1:
+                        fitness[i]+=1
+                    else:
+                        fitness[j]+=1
+                    window.init()
+            for i in range(len(currentGeneration)):
+                print("Gen " + str(g) + " player " + currentGeneration[i]["genes"] + " fitness: " + str(fitness[i]))
+            nextGeneration = []
+            while len(nextGeneration) < numPlayers:
+                parent1 = random.choices(currentGeneration, weights=fitness, k=1)[0]
+                parent2 = random.choices(currentGeneration, weights=fitness, k=1)[0]
                 kids = crossover._make_babies(parent1["genes"], parent2["genes"], 10)
-                currentGeneration.append({"type":"ExploreExploitPlayer", "genes":kids[0], "gene_length":10})
-                currentGeneration.append({"type":"ExploreExploitPlayer", "genes":kids[1], "gene_length":10})
+                nextGeneration.append({"type":"ExploreExploitPlayer", "genes":kids[0], "gene_length":10})
+                nextGeneration.append({"type":"ExploreExploitPlayer", "genes":kids[1], "gene_length":10})
+            currentGeneration = nextGeneration
 
 
         window.close()

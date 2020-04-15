@@ -187,7 +187,7 @@ class RootSystem(object):
 
         """
         del self.blocks[position]
-        self.world.add_block(position,texture,immediate)
+        self.world.remove_block(position,texture,immediate)
 
     def hit_test(self, position, vector, max_distance=8, ignore=[]):
         """ Line of sight search from current position. If a block is

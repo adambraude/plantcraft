@@ -28,7 +28,7 @@ class World(object):
         # This defines all the blocks that are currently in the world.
         self.world = {}
 
-        self.nutrients = []
+        self.nutrients = {}
 
         # Same mapping as `world` but only contains blocks that are shown.
         self.shown = {}
@@ -66,6 +66,7 @@ class World(object):
                 self.addChunkNutrients(self.density/100, (-40, 40, 0, 1, -40, 40), self.cluster, self.clusterp)
             else:
                 self.addChunkNutrients(self.density/100, (-20, 20, -20, 0, -20, 20), self.cluster, self.clusterp)
+        print("initialized world with " + str(len(self.nutrients)) + " nutrients")
 
     @staticmethod
     def modByDirection(start, direc):
@@ -90,7 +91,6 @@ class World(object):
                 for z in range(zmin, zmax):
                     if random.random()<density and ((x,y,z) not in self.world):
                         self.add_block((x,y,z), self.set.NUTRIENT_TEXTURE)
-                        self.nutrients.append((x,y,z))
                         if self.set.PROX:
                             self.hide_block((x, y, z))
                         if (self.set.LOGENABLED and self.set.LOGNUTRIENTSTART):self.set.LOG += "(4," + str(x) + "," + str(y) + ","+ str(z) + ")\n";
@@ -109,7 +109,6 @@ class World(object):
                     for z in range(zmin, zmax):
                         if random.random()<density and ((x,y,z) not in self.world):
                             self.add_block((x,y,z), self.set.NUTRIENT_TEXTURE)
-                            self.nutrients.append((x,y,z))
                             if self.set.PROX:
                                 self.hide_block((x, y, z))
                             if (self.set.LOGENABLED and self.set.LOGNUTRIENTSTART):self.set.LOG += "(4," + str(x) + "," + str(y) + ","+ str(z) + ")\n";
@@ -123,7 +122,6 @@ class World(object):
                                 passc.append((x,y,z))
                 for (x,y,z) in passc:
                     self.add_block((x,y,z), self.set.NUTRIENT_TEXTURE)
-                    self.nutrients.append((x,y,z))
                     if self.set.PROX:
                         self.hide_block((x, y, z))
                     if (self.set.LOGENABLED and self.set.LOGNUTRIENTSTART):self.set.LOG += "(4," + str(x) + "," + str(y) + ","+ str(z) + ")\n";
@@ -145,7 +143,6 @@ class World(object):
                                 for zp in range(0, chunkSize):
                                     if random.random()<d and ((x,y,z) not in self.world):
                                         self.add_block((x+xp,y+yp,z+zp), self.set.NUTRIENT_TEXTURE)
-                                        self.nutrients.append((x+xp,y+yp,z+zp))
                                         if self.set.PROX:
                                             self.hide_block((x+xp, y+yp, z+zp))
                                         if (self.set.LOGENABLED and self.set.LOGNUTRIENTSTART):self.set.LOG += "(4," + str(x+xp) + "," + str(y+yp) + ","+ str(z+zp) + ")\n";
@@ -178,6 +175,8 @@ class World(object):
         """
         if position in self.world:
             self.remove_block(position, immediate)
+        if texture == self.set.NUTRIENT_TEXTURE:
+            self.nutrients[position] = True
         self.world[position] = texture
         #self.sectors.setdefault(sectorize(position), []).append(position)
         if immediate:
@@ -209,6 +208,8 @@ class World(object):
 
         """
         del self.world[position]
+        if position in self.nutrients:
+            del self.nutrients[position]
         #self.sectors[sectorize(position)].remove(position)
         if immediate:
             if position in self.shown:

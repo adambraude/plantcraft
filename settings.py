@@ -48,7 +48,16 @@ class Settings:
         else: self.CLUSTERP = "None"
         if given["players"]: self.players = given["players"]
         else: self.players = ["Human Player", "RandomPlayer"]
-
+        if given["whatdo"]:
+            if given["whatdo"] == 'Play':
+                self.whatdo = 0
+            if given["whatdo"] == 'CPU best of 100':
+                self.whatdo = 1
+            if given["whatdo"] == 'Breeding':
+                self.whatdo = 2
+        else:
+            self.whatdo = 0
+            
     def setPlayers(self, players):
         self.players = players
 

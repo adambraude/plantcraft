@@ -19,9 +19,8 @@ def _settings():
 
     column1 = [
 
-            
-            [sg.Image('logo.png')],
-            [sg.Text('Game Settings', size=(30, 1), justification='center', font=("Impact", 25))],
+            [sg.Text('Select a program mode', font=("Helvetica", 10))],
+            [sg.InputCombo(('Play', 'CPU best of 100', 'Breeding'), size=(35, 10), default_value='Play', key="whatdo", enable_events=True)],
 
             [sg.Checkbox('Replay?', size=(10,1), default=False, key="replay")],
             [sg.Text('File', size=(8, 1)), sg.Input(key="replayf"), sg.FileBrowse()],
@@ -44,6 +43,9 @@ def _settings():
             [sg.Text('Select nutrient visibility... (how many blocks away do nutrient become visible?)', font=("Helvetica", 10), key="proxydistlabel", visible=False)],
             [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 5, key="proxydist", visible=False)],
             
+            ]
+
+    column2 = [
             #2D mode
             [sg.Text('Select a board configuration', font=("Helvetica", 10))],
             [sg.InputCombo(('3D mode', '2D mode'), size=(35, 10), default_value='3D mode', key="mode")],
@@ -62,16 +64,19 @@ def _settings():
             [sg.Slider(range=(1, 100), orientation = 'h', size = (34,20), default_value = 8, resolution=1, key="fork")],
 
             [sg.Text('Select nutrient reward for claiming a nutrient block (as a mutliple of the cost to grow 1 block)', font=("Helvetica", 10))],
-            [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 2, resolution=1, key="reward")],
-
-            [sg.Submit(tooltip='Click to submit this window'), sg.Cancel()],
-            [sg.Image('ground.png')]
+            [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 2, resolution=1, key="reward")]
             
             ]
 
+    colmain = [
+        [sg.Image('logo.png')],
+        [sg.Column(column1, element_justification='center'),sg.Column(column2, element_justification='center')],
+        [sg.Submit(tooltip='Click to submit this window'), sg.Cancel()],
+        [sg.Image('ground.png')]
+    ]
+
     layout = [
-        [sg.Column(column1, element_justification='center')],
-        
+        [sg.Column(colmain, element_justification='center')]
     ]
     
     window = sg.Window('Settings', layout)
@@ -92,7 +97,7 @@ def _settings():
                 players.append({"type":values["player2"]})
             out = { "players":players, "mode":values["mode"], "PROX":values["proxy"], "PROX_RANGE":values["proxydist"], 
                     "DENSITY":values["density"], "STARTE":values["starte"], "FORK":values["fork"], "REWARD":values["reward"], 
-                    "REPLAY":values["replay"], "REPLAYFILE":values["replayf"], "CLUSTER":values["cluster"], "CLUSTERP":values["clusterp"], "CLUSTERTYPE":values["n0"]}
+                    "REPLAY":values["replay"], "REPLAYFILE":values["replayf"], "CLUSTER":values["cluster"], "CLUSTERP":values["clusterp"], "CLUSTERTYPE":values["n0"], "whatdo":values["whatdo"]}
             print(out)
             window.close()
             return out
