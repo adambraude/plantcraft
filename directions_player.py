@@ -27,6 +27,9 @@ class DirectionsPlayer(Player):
                 if self.genestrand[j] == '1':
                     count += 1
             self.traits.append(count)
+            self.traits.append(self.gene_length-count)
+            i+=1
+            print(self.traits)
         
         # read gene strand for this particular player and determine probabilities
     def determineLikelihood(self):
@@ -43,7 +46,7 @@ class DirectionsPlayer(Player):
         # probUp
         self.probabilities.append(random.randint(0, self.traits[5])) #x, y+1, z
         # probFork 
-        self.probabilities.append(random.randint(0, self.traits[6]))
+        #self.probabilities.append(random.randint(0, self.traits[6]))
         self.prob_order = np.argsort(self.probabilities) #use probabilities back to front and loop through 
         return self.prob_order
         
@@ -68,8 +71,8 @@ class DirectionsPlayer(Player):
                 set_move = self._move(index,(0,0,1),False)
             if(moves_order[i]==5):
                 set_move = self._move(index,(0,0,-1),False)
-            if(moves_order[i]==6):
-                set_move = self._move(index,(0,1,0),True)
+            #if(moves_order[i]==6):
+            #    set_move = self._move(index,(0,1,0),True)
 
 
     def _move(self, index, adding, fork):
@@ -82,4 +85,3 @@ class DirectionsPlayer(Player):
             return 1
         else:
             return 0
-        
