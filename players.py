@@ -185,17 +185,18 @@ class ExploreExploitPlayer(Player):
         oldorigin = None
         fork = True
          
-        for b in self.rootSystem.world.nutrients:
-                for t in self.rootSystem.tips.keys():
-                    dist = abs(t[0]-b[0])+abs(t[1]-b[1])+abs(t[2]-b[2])
-                    if dist >= tdist and self.rootSystem.tips[t]:
-                        tdist = dist
-                        if b != target:
-                            olddist = tdist
-                            oldtarget = target
-                            oldorigin = origin
-                        target = b
-                        origin = t
+        for b in self.rootSystem.nutrients:
+            for t in self.rootSystem.tips.keys():
+                if (self.rootSystem.world.world[t] in self.rootSystem.absorb[:-1]): continue
+                dist = abs(t[0]-b[0])+abs(t[1]-b[1])+abs(t[2]-b[2])
+                if dist >= tdist and self.rootSystem.tips[t]:
+                    tdist = dist
+                    if b != target:
+                        olddist = tdist
+                        oldtarget = target
+                        oldorigin = origin
+                    target = b
+                    origin = t
  
         newmoves = []
         if target:
@@ -244,17 +245,18 @@ class ExploreExploitPlayer(Player):
         oldorigin = None
         fork = True
          #find the closest and second closest nutrients
-        for b in self.rootSystem.world.nutrients:
-                for t in self.rootSystem.tips.keys():
-                    dist = abs(t[0]-b[0])+abs(t[1]-b[1])+abs(t[2]-b[2])
-                    if dist <= tdist and self.rootSystem.tips[t]:
-                        tdist = dist
-                        if b != target:
-                            olddist = tdist
-                            oldtarget = target
-                            oldorigin = origin
-                        target = b
-                        origin = t
+        for b in self.rootSystem.nutrients:
+            for t in self.rootSystem.tips.keys():
+                if (self.rootSystem.world.world[t] in self.rootSystem.absorb[:-1]): continue
+                dist = abs(t[0]-b[0])+abs(t[1]-b[1])+abs(t[2]-b[2])
+                if dist <= tdist and self.rootSystem.tips[t]:
+                    tdist = dist
+                    if b != target:
+                        olddist = tdist
+                        oldtarget = target
+                        oldorigin = origin
+                    target = b
+                    origin = t
  
         newmoves = []
         if target:

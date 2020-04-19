@@ -40,9 +40,24 @@ class Settings:
         else: self.TWODMODE = False
         if given["DENSITY"]: self.DENSITY = given["DENSITY"]
         else: self.DENSITY = 5
+        if given["CLUSTER"]: self.CLUSTER = given["CLUSTER"]
+        else: self.CLUSTER = 5
+        if given["CLUSTERP"]: self.CLUSTERP = int(given["CLUSTERP"])
+        else: self.CLUSTERP = 3
+        if given["CLUSTERTYPE"]: self.CLUSTERTYPE = given["CLUSTERTYPE"]
+        else: self.CLUSTERP = "None"
         if given["players"]: self.players = given["players"]
         else: self.players = ["Human Player", "RandomPlayer"]
-
+        if given["whatdo"]:
+            if given["whatdo"] == 'Play':
+                self.whatdo = 0
+            if given["whatdo"] == 'CPU best of 100':
+                self.whatdo = 1
+            if given["whatdo"] == 'Breeding':
+                self.whatdo = 2
+        else:
+            self.whatdo = 0
+            
     def setPlayers(self, players):
         self.players = players
 
