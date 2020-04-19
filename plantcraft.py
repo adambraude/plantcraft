@@ -177,6 +177,7 @@ class Window(pyglet.window.Window):
                 i += 1
 
 
+
         self.currentPlayerIndex = -1
         #drop all the already-read moves from memory.
         if settings.REPLAY: self.moves = moves[self.pos:]
@@ -612,7 +613,7 @@ def main():
         currentGeneration = []
         for i in range(numPlayers):
             genome = ""
-            for j in range(20):
+            for j in range(10):
                 if (random.random() > 0.5):
                     genome += "1"
                 else:
