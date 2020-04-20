@@ -209,6 +209,7 @@ class World(object):
         del self.world[position]
         if position in self.nutrients:
             del self.nutrients[position]
+
         #self.sectors[sectorize(position)].remove(position)
         if immediate:
             if position in self.shown:

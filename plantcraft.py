@@ -15,6 +15,7 @@ import welcome
 from world import World
 from rootsystem import RootSystem
 from players import *
+from aplayer import *
 import settings as set
 import crossover
 #[player1, player2, [density, proximity?, prox distance, graphics mode]]
@@ -35,7 +36,7 @@ NUM_KEYS = (key._1, key._2, key._3, key._4, key._5, key._6, key._7, key._8, key.
 
 #END = 'death'
 END = 'points'
-WIN_POINTS = 1000
+WIN_POINTS = 2000
 
 #def adjust_settings(settings, TWODMODE):
 #    if settings[2][3] == '2D mode':
@@ -71,7 +72,7 @@ def printLog(filename = "logfile"):
     file.close()
 
 settings = set.Settings(all_settings)
-playersDict = {"Human Player":HumanPlayer, "RandomPlayer":RandomPlayer, "GreedyPlayer":GreedyPlayer, "GreedyForker":GreedyForker, "ExploreExploitPlayer":ExploreExploitPlayer}
+playersDict = {"Human Player":HumanPlayer, "RandomPlayer":RandomPlayer, "GreedyPlayer":GreedyPlayer, "GreedyForker":GreedyForker, "ExploreExploitPlayer":APlayer}
 
 
 class Window(pyglet.window.Window):
@@ -187,6 +188,7 @@ class Window(pyglet.window.Window):
                         self.stalks.append(0)
                         i += 1
 
+        self.world.rs = self.rootSystems
         self.currentPlayerIndex = -1
         #drop all the already-read moves from memory.
         if settings.REPLAY: self.moves = moves[self.pos:]
@@ -656,7 +658,7 @@ def main():
     if mode == 2:
         window = Window(width=0, height=0, caption='PlantCraft', resizable=False)
         numPlayers = 10
-        numGenerations = 10
+        numGenerations = 50
         currentGeneration = []
         for i in range(numPlayers):
             genome = ""
