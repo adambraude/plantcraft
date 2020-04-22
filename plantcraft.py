@@ -674,6 +674,8 @@ def main():
             energy = [0 for g in currentGeneration]
             ends = {"win":0, "sweep":0, "death":0}
             turns = 0
+            wturns = [0 for g in currentGeneration]
+            truewins = [0 for g in currentGeneration]
             for i in range(len(currentGeneration)):
                 for j in range(i+1, len(currentGeneration)):
                     p1 = currentGeneration[i]
@@ -685,15 +687,30 @@ def main():
                     pyglet.app.run()
                     if window.winner == 0:
                         fitness[i]+=1
+                        if window.end == "win": 
+                            wturns[i] += window.turnCount
+                            truewins[i] += 1
                     else:
                         fitness[j]+=1
+                        if window.end == "win": 
+                            wturns[j] += window.turnCount
+                            truewins[j] += 1
                     energy[i] += window.stats["energy"][0]
                     energy[j] += window.stats["energy"][1]
                     ends[window.end] += 1
                     turns += window.turnCount
                     window.init()
             for i in range(len(currentGeneration)):
-                print("Gen " + str(g) + " player " + currentGeneration[i]["genes"] + " fitness: " + str(fitness[i]) + " avg end energy: " + str(math.ceil(energy[i]/(len(currentGeneration)-1))))
+                traits = []
+                gene = currentGeneration[i]["genes"]
+                genel = currentGeneration[i]["gene_length"]
+                for x in range(int(len(gene)/genel)):
+                    count = 0
+                    for y in range(genel):
+                        if gene[y+x*genel] == '1':
+                            count += 1
+                    traits.append(count)
+                print("Gen " + str(g) + " player " + currentGeneration[i]["genes"] + " " + str(traits) + " [fitness: " + str(fitness[i]) + "] [avg end energy: " + str(math.ceil(energy[i]/(len(currentGeneration)-1))) + "] [avg turns to win: " + (str(math.ceil(wturns[i]/truewins[i])) if truewins[i]>0 else "no wins") + "]")
             print("Generation total stats: wins: " + str(ends["win"]) + " deaths: " + str(ends["death"]) + " sweeps: " + str(ends["sweep"]) + " avg turns taken: " + str(math.ceil(turns/(2*(len(currentGeneration)-1)))))
             nextGeneration = []
             while len(nextGeneration) < numPlayers:

@@ -129,6 +129,8 @@ class ExploreExploitPlayer(Player):
         self.gene_length = settings["gene_length"]
         self.traits = []
         self.readGenes()
+        self.length_stay = 0
+        self.moveToMake = self.determineLikelihood()
     
     # read gene strand
     def readGenes(self):
@@ -139,14 +141,16 @@ class ExploreExploitPlayer(Player):
                 if self.genestrand[j+i*self.gene_length] == '1':
                     count += 1
             self.traits.append(count)
+            self.traits.append(self.gene_length-count)
         
         # read gene strand for this particular player and determine probabilities
     def determineLikelihood(self):
         # runs the probabilities based on allele counts in genes
-        probExplore = random.randint(0, self.traits[0])
-        probExploit = random.randint(0, self.traits[1])
+        probExplore = self.traits[0]
+        self.length_stay = self.traits[1]
+        #probExploit = random.randint(0, self.traits[1])
         
-        if probExplore > probExploit:
+        if random.randint(0,self.gene_length) <= probExplore:
             return 0
         else:
             return 1
@@ -154,11 +158,18 @@ class ExploreExploitPlayer(Player):
         # choose a turn to make
     def takeTurn(self):
         #determine if in explore or exploit mode
-        moveToMake = self.determineLikelihood()
-        if moveToMake == 0:
-            self._exploitMove()
-        else:
-            self._exploreMove()
+        if self.length_stay == 0:
+            self.moveToMake = self.determineLikelihood()
+            if self.moveToMake == 0:
+                self._exploitMove()
+            else:
+                self._exploreMove()
+        else: 
+            self.length_stay -= self.length_stay
+            if self.moveToMake == 0:
+                self._exploitMove()
+            else:
+                self._exploreMove()
         #call the correct play turn based on the information from the string
         
 # lazy repurposing of greedy to search outwards for furthest nutrient
