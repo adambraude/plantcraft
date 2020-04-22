@@ -147,7 +147,7 @@ class ExploreExploitPlayer(Player):
     def determineLikelihood(self):
         # runs the probabilities based on allele counts in genes
         probExplore = self.traits[0]
-        self.length_stay = self.traits[3]
+        self.length_stay = self.traits[1]
         #probExploit = random.randint(0, self.traits[1])
         
         if random.randint(0,self.gene_length) <= probExplore:

@@ -663,9 +663,9 @@ def main():
             genome = ""
             for j in range(10):
                 if (random.random() > 0.5):
-                    genome += "11"
+                    genome += "1"
                 else:
-                    genome += "00"
+                    genome += "0"
             currentGeneration.append({"type":"ExploreExploitPlayer", "genes":genome, "gene_length":10})
         settings.GFX = False
         for g in range(numGenerations):
