@@ -19,7 +19,7 @@ def flip(string):
 
 def _point_mutation(string1, string2):
     # mutate random spots
-    mutationChance = 0.2
+    mutationChance = 0.5
     if random.random() < mutationChance:
         string1 = flip(string1)
         string2 = flip(string2)

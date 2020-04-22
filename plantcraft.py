@@ -36,7 +36,7 @@ NUM_KEYS = (key._1, key._2, key._3, key._4, key._5, key._6, key._7, key._8, key.
 
 #END = 'death'
 END = 'points'
-WIN_POINTS = 2000
+WIN_POINTS = 1000
 
 #def adjust_settings(settings, TWODMODE):
 #    if settings[2][3] == '2D mode':
@@ -658,15 +658,15 @@ def main():
     if mode == 2:
         window = Window(width=0, height=0, caption='PlantCraft', resizable=False)
         numPlayers = 10
-        numGenerations = 50
+        numGenerations = 5
         currentGeneration = []
         for i in range(numPlayers):
             genome = ""
-            for j in range(10):
+            for j in range(60):
                 if (random.random() > 0.5):
-                    genome += "11"
+                    genome += "1"
                 else:
-                    genome += "00"
+                    genome += "0"
             currentGeneration.append({"type":"ExploreExploitPlayer", "genes":genome, "gene_length":10})
         settings.GFX = False
         for g in range(numGenerations):

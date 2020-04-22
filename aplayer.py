@@ -10,6 +10,7 @@ class APlayer(Player):
         self.traits = []
         self.readGenes()
         self.target = None
+        self.persistence = 0
     
     # read gene strand
     def readGenes(self):
@@ -20,6 +21,8 @@ class APlayer(Player):
                 if self.genestrand[j+i*self.gene_length] == '1':
                     count += 1
             self.traits.append(count)
+        if self.traits[2] == self.gene_length: self.traits[2] = 9999
+        if self.traits[3] == self.gene_length: self.traits[3] = 9999
         
         # read gene strand for this particular player and determine probabilities
     def determineLikelihood(self):
@@ -45,13 +48,15 @@ class APlayer(Player):
             #did something happen to the target?
             if self.target not in self.rootSystem.nutrients:
                 self.target = None
+            else:
+                self.persistence -= 1
         if not self.target:
-            print("choosing target")
+            #print("choosing target")
             self._findTarget()
             self._moveTowardTarget()
         else:
             self._moveTowardTarget()
-        if tipflag:
+        if tipflag or self.persistence < 0:
             self.target = None
 
     def _findTarget(self):
@@ -60,28 +65,30 @@ class APlayer(Player):
         #self.origin = None
         shortestDist = 999999
         longestDist = 0
-        closest = None
-        furthest = None
+        closest = []
+        furthest = []
         olddist = 0
         oldorigin = None
+        dists = []
          
         for b in self.rootSystem.nutrients:
             for t in self.rootSystem.tips.keys():
                 if (self.rootSystem.world.world[t] in self.rootSystem.absorb[:-1]): continue
                 dist = abs(t[0]-b[0])+abs(t[1]-b[1])+abs(t[2]-b[2])
-                if dist <= shortestDist and self.rootSystem.tips[t]:
-                    shortestDist = dist
-                    closest = b
-                if dist >= longestDist and self.rootSystem.tips[t]:
-                    longestDist = dist
-                    furthest = b
+                dists.append((b, dist))
+        dists = sorted(dists, key=snd)
+        closest = dists[:self.traits[4]]
+        furthest = dists[-self.traits[5]:]
         moveToMake = self.determineLikelihood()
         if moveToMake == 1:
-            print("exploring")
-            self.target = furthest
+            #print("exploring")
+            self.target = random.choice(furthest)[0]
+            self.persistence = self.traits[3]
         else:
-            print("exploiting")
-            self.target = closest
+            #print("exploiting")
+            self.target = random.choice(closest)[0]
+            self.persistence = self.traits[2]
+
 
     def _moveTowardTarget(self):
         moves = self.rootSystem.legalMoves()
@@ -110,3 +117,6 @@ class APlayer(Player):
         move = random.choice(newmoves)
         #print("moving from " + str(move[0]) + " to " + str(move[1]) + " in approach of target " + str(target))
         self.rootSystem.addToTip(move[0], move[1], fork)
+
+def snd(tuple):
+    return tuple[1]
