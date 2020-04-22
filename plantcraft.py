@@ -187,6 +187,7 @@ class Window(pyglet.window.Window):
                         self.stalks.append(0)
                         i += 1
 
+
         self.currentPlayerIndex = -1
         #drop all the already-read moves from memory.
         if settings.REPLAY: self.moves = moves[self.pos:]
