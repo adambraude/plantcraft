@@ -78,19 +78,29 @@ class APlayer(Player):
                 dists.append((b, dist))
         dists = sorted(dists, key=snd)
         closest = dists[:self.traits[4]]
-        furthest = dists[-self.traits[5]:]
+        distWeight = self.traits[6]
+        constWeight = self.traits[7]*2+1
         moveToMake = self.determineLikelihood()
         if moveToMake == 1:
             #print("exploring")
-            self.target = random.choice(furthest)[0]
+            if not dists:
+                target = None
+                return
+            self.target = random.choices(dists, weights=[(1/(t[1]))*distWeight + 1/constWeight for t in dists], k=1)[0][0]
+            self.alttarget = random.choices(dists, weights=[(1/(t[1]))*distWeight + 1/constWeight for t in dists], k=1)[0][0]
             self.persistence = self.traits[3]
         else:
             #print("exploiting")
-            self.target = random.choice(closest)[0]
+            if not closest:
+                target = None
+                return
+            self.target = random.choices(closest, weights=[(1/(t[1]))*distWeight + 1/constWeight for t in closest], k=1)[0][0]
+            self.alttarget = random.choices(dists, weights=[(1/(t[1]))*distWeight + 1/constWeight for t in dists], k=1)[0][0]
             self.persistence = self.traits[2]
 
 
     def _moveTowardTarget(self):
+        if not self.target: return
         moves = self.rootSystem.legalMoves()
         target = self.target
         tdist = 99999
@@ -99,7 +109,7 @@ class APlayer(Player):
             d = abs(t[0]-target[0])+abs(t[1]-target[1])+abs(t[2]-target[2])
             if d < tdist:
                 tdist = d
-        fork = False
+        fork = True
         newmoves = []
         for m in moves:
                 if abs(m[1][0]-target[0])+abs(m[1][1]-target[1])+abs(m[1][2]-target[2]) < tdist:
@@ -112,9 +122,21 @@ class APlayer(Player):
                     if abs(m[1][0]-target[0])+abs(m[1][1]-target[1])+abs(m[1][2]-target[2]) < tdist+margin:
                         newmoves.append(m)
 
+        if target:
+            for m in moves:
+                if abs(m[1][0]-target[0])+abs(m[1][1]-target[1])+abs(m[1][2]-target[2]) > tdist:
+                    newmoves.append(m)
+
         if len(newmoves)==0: return
              
         move = random.choice(newmoves)
+        if self.alttarget:
+            newdist = abs(target[0]-self.alttarget[0])+abs(target[1]-self.alttarget[1])+abs(target[2]-self.alttarget[2])
+            olddist = abs(move[0][0]-self.alttarget[0])+abs(move[0][1]-self.alttarget[1])+abs(move[0][2]-self.alttarget[2])
+            if fork and (newdist-olddist - self.traits[5]^2 < self.rootSystem.world.set.FORK_COST/self.rootSystem.world.set.ROOT_COST):
+                fork = False
+        else:
+            fork = False
         #print("moving from " + str(move[0]) + " to " + str(move[1]) + " in approach of target " + str(target))
         self.rootSystem.addToTip(move[0], move[1], fork)
 
