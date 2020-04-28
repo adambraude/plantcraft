@@ -1,4 +1,6 @@
 import sys
+from pyglet import image
+from pyglet.graphics import TextureGroup
 
 class Settings:
     def __init__(self, given={}):
@@ -6,7 +8,7 @@ class Settings:
                                                     calcTextureCoords(6),calcTextureCoords(7),calcTextureCoords(8),calcTextureCoords(9))
         self.TEXTURE_COLORS = (None, (128,255,255,255), (128,180,255,255), (204, 128, 255, 255))
         
-        self.LOGENABLED = True
+        self.LOGENABLED = False
         self.LOG = ""
         if "PROX" in given: self.PROX = given["PROX"]
         else: self.PROX = True
@@ -26,9 +28,12 @@ class Settings:
         else: self.REPLAY_FILE = "logfile"
 
         self.TEXTURE_PATH = "roots.png"
-        self.LOGNUTRIENTSTART = True
+        self.LOGNUTRIENTSTART = False
 
         self.TICKS_PER_SEC = 60
+
+        self.textureGroup = TextureGroup(image.load(self.TEXTURE_PATH).get_texture())
+
 
         self.FACES = [( 0, 1, 0), ( 0,-1, 0), (-1, 0, 0), ( 1, 0, 0), ( 0, 0, 1), ( 0, 0,-1),]
         self.LATFACES = [(-1, 0, 0), ( 1, 0, 0), ( 0, 0, 1), ( 0, 0,-1)]
