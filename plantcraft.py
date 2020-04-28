@@ -18,6 +18,7 @@ from players import *
 from aplayer import *
 import settings as set
 import crossover
+from pprint import pprint
 #[player1, player2, [density, proximity?, prox distance, graphics mode]]
 #['Human Player', 'None', [28.0, False, 5.0, '3D mode']]
 
@@ -112,7 +113,7 @@ class Window(pyglet.window.Window):
         # Velocity in the y (upward) direction.
         self.dy = 0
 
-        if not settings.REPLAY:
+        if settings.LOGENABLED and not settings.REPLAY:
             settings.LOG += "(IE:" + str(settings.INIT_ENERGY) + ")\n"
             settings.LOG += "(RC:" + str(settings.ROOT_COST) + ")\n"
             settings.LOG += "(FC:" + str(settings.FORK_COST) + ")\n"
@@ -194,22 +195,23 @@ class Window(pyglet.window.Window):
         if settings.REPLAY: self.moves = moves[self.pos:]
         self.pos = 0
 
-        self.positionLabel = pyglet.text.Label('', font_name="Arial", font_size=18, x=self.width/2,
-                                               anchor_x='center', y=self.height-10, anchor_y='top',
-                                               color=(255,255,255,255))
+        if settings.GFX:
+            self.positionLabel = pyglet.text.Label('', font_name="Arial", font_size=18, x=self.width/2,
+                                                   anchor_x='center', y=self.height-10, anchor_y='top',
+                                                   color=(255,255,255,255))
 
-        self.controlsLabel = pyglet.text.Label("", font_name="Arial", font_size=18, x=self.width/4,
-                                               anchor_x="center", y=10, anchor_y="bottom", color=(255,255,255,255))
-        self.controlsLabel.text = "l-grow r-fork"
+            self.controlsLabel = pyglet.text.Label("", font_name="Arial", font_size=18, x=self.width/4,
+                                                   anchor_x="center", y=10, anchor_y="bottom", color=(255,255,255,255))
+            self.controlsLabel.text = "l-grow r-fork"
 
-        self.energyLabel = pyglet.text.Label("", font_name="Arial", font_size=18, x=self.width/4,
-                                             anchor_x="center", y=self.height-10, anchor_y="top", color=(255,0,0,255))
+            self.energyLabel = pyglet.text.Label("", font_name="Arial", font_size=18, x=self.width/4,
+                                                 anchor_x="center", y=self.height-10, anchor_y="top", color=(255,0,0,255))
 
         # This call schedules the `update()` method to be called
         # TICKS_PER_SEC. This is the main game event loop.
         pyglet.clock.schedule_interval(self.update, 1.0 / TICKS_PER_SEC)
-
         self.nextTurn()
+
 
         
         #self.alive = 1
@@ -221,7 +223,6 @@ class Window(pyglet.window.Window):
             while(self.moves[self.pos] != "True" and self.moves[self.pos] != "False"):
                 self.pos += 1
                 if self.pos >= len(self.moves): return
-            print(self.pos)
             if self.moves[self.pos] == "True": fork = True
             else: fork = False
             self.players[int(self.moves[self.pos+8])].rootSystem.addToTip((int(self.moves[self.pos+1]),int(self.moves[self.pos+2]),int(self.moves[self.pos+3])),(int(self.moves[self.pos+4]),int(self.moves[self.pos+5]),int(self.moves[self.pos+6])),fork)
@@ -328,7 +329,7 @@ class Window(pyglet.window.Window):
                         if e > maxi:
                             maxi = e
                             self.winner = i
-                            
+                    pyglet.clock.unschedule(self.update)
                     pyglet.app.exit()
                 else:
                     self.nextTurn()
@@ -467,6 +468,7 @@ class Window(pyglet.window.Window):
             self.motion[2] -= 1
 
     def on_resize(self, width, height):
+        if not settings.GFX: return
         """ Called when the window is resized to a new `width` and `height`.
 
         """
@@ -654,22 +656,22 @@ def main():
         end = time.time()
         print("Player 1 wins: " + str(wins[0]))
         print("Player 2 wins: " + str(wins[1]))
-
     if mode == 2:
+        settings.GFX = False
         window = Window(width=0, height=0, caption='PlantCraft', resizable=False)
         numPlayers = 10
-        numGenerations = 5
+        numGenerations = 50
         currentGeneration = []
         for i in range(numPlayers):
             genome = ""
-            for j in range(60):
+            for j in range(80):
                 if (random.random() > 0.5):
                     genome += "1"
                 else:
                     genome += "0"
             currentGeneration.append({"type":"ExploreExploitPlayer", "genes":genome, "gene_length":10})
-        settings.GFX = False
         for g in range(numGenerations):
+            gstart = time.time()
             fitness = [0 for g in currentGeneration]
             energy = [0 for g in currentGeneration]
             ends = {"win":0, "sweep":0, "death":0}
@@ -719,6 +721,8 @@ def main():
                 kids = crossover._make_babies(parent1["genes"], parent2["genes"], 10)
                 nextGeneration.append({"type":"ExploreExploitPlayer", "genes":kids[0], "gene_length":10})
                 nextGeneration.append({"type":"ExploreExploitPlayer", "genes":kids[1], "gene_length":10})
+            end = time.time()
+            print("Time taken by generation: " + str((end-gstart)/60) + " minutes: " + str((end-gstart)/turns) + " seconds per turn")
             currentGeneration = nextGeneration
 
 

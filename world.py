@@ -3,7 +3,7 @@ import random
 from collections import deque
 from pyglet import image
 from pyglet.gl import *
-from pyglet.graphics import TextureGroup
+
 
 import settings as set
 
@@ -22,7 +22,7 @@ class World(object):
         self.batch = pyglet.graphics.Batch()
 
         # A TextureGroup manages an OpenGL texture.
-        self.group = TextureGroup(image.load(self.set.TEXTURE_PATH).get_texture())
+        self.group = settings.textureGroup
 
         # A mapping from position to the texture of the block at that position.
         # This defines all the blocks that are currently in the world.
