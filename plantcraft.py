@@ -880,81 +880,78 @@ class DirectionsPlayer(Player):
         self.rootSystem.tipTex=TEXTURES[3]
         self.genestrand = genes
         self.gene_length = gene_length
-        self.traits = []
+        self.traits = [0,0,0,0,0,0]
         self.readGenes()
-        self.probabilities = []
+        #self.probabilities = []
         self.prob_order = []
+        #self.legal_moves
     
     # read gene strand
     def readGenes(self):
         # finds the count of alleles in a gene
+        #self.traits = []
         for i in range(int((len(self.genestrand))/self.gene_length)):
             count = 0
             for j in range(self.gene_length):
                 if self.genestrand[(self.gene_length*i)+j] == '1':
                     count += 1
-            self.traits.append(count)
-            self.traits.append(self.gene_length-count)
+            self.traits[i] = count
             i+=1
-            print(self.traits)
+            self.traits[i] = (self.gene_length-count)
+            
+            #print(self.traits)
         
         # read gene strand for this particular player and determine probabilities
     def determineLikelihood(self):
-        #probRight 
-        self.probabilities.append(random.randint(0, self.traits[0])) #x+1, y, z
-        #probLeft 
-        self.probabilities.append(random.randint(0, self.traits[1])) #x-1, y, z
-        # probForward 
-        self.probabilities.append(random.randint(0, self.traits[2])) #x, y, z+1
-        # probBackward 
-        self.probabilities.append(random.randint(0, self.traits[3])) #x, y, z-1
-        # probDown
-        self.probabilities.append(random.randint(0, self.traits[4])) #x, y-1, z
-        # probUp
-        self.probabilities.append(random.randint(0, self.traits[5])) #x, y+1, z
-        # probFork 
-        #self.probabilities.append(random.randint(0, self.traits[6]))
-        self.prob_order = np.argsort(self.probabilities) #use probabilities back to front and loop through 
+        
+        self.prob_order = np.argsort(self.traits) #use probabilities back to front and loop through 
+        #print(self.prob_order)
         return self.prob_order
         
     def takeTurn(self):
         #choose a move based on the likelihood
+        #legal_moves = self.rootSystem.legalMoves()
+        #print(legal_moves)
         moves_order = self.determineLikelihood()
+        #print(moves_order)
         set_move = 0
-        index = random.randint(1, len(self.rootSystem.tipPositions)-1)
+        
         # while a move is possible and has not been taken
         for i in reversed(moves_order):
+            index = random.randint(1, len(self.rootSystem.tipPositions)-1)
             if(set_move==1):
                 break
             if(moves_order[i]==0):
-                set_move = self._move(index,(1,0,0),False)
+                set_move = self._move(index,(1,0,0))#,False)
             if(moves_order[i]==1):
-                set_move = self._move(index,(-1,0,0),False)
+                set_move = self._move(index,(-1,0,0))#,False)
             if(moves_order[i]==2):
-                set_move = self._move(index,(0,1,0),False)
+                set_move = self._move(index,(0,1,0))#,False)
             if(moves_order[i]==3):
-                set_move = self._move(index,(0,-1,0),False)
+                set_move = self._move(index,(0,-1,0))#,False)
             if(moves_order[i]==4):
-                set_move = self._move(index,(0,0,1),False)
+                set_move = self._move(index,(0,0,1))#,False)
             if(moves_order[i]==5):
-                set_move = self._move(index,(0,0,-1),False)
+                set_move = self._move(index,(0,0,-1))#,False)
             #if(moves_order[i]==6):
             #    set_move = self._move(index,(0,1,0),True)
 
 
-    def _move(self, index, adding, fork):
-        move = ((self.rootSystem.tipPositions[index][0])+(adding[0]),(self.rootSystem.tipPositions[index][1])+(adding[1]), (self.rootSystem.tipPositions[index][2])+(adding[2]))
-        if self.rootSystem.addToTip(self.rootSystem.tipPositions[index], move, fork):
-            if fork:
-                self.rootSystem.tipPositions.append(move)
-            else:
-                self.rootSystem.tipPositions[index] = move
+    def _move(self, index, adding):#, fork):
+        move = (self.rootSystem.tipPositions[index],((self.rootSystem.tipPositions[index][0])+(adding[0]),(self.rootSystem.tipPositions[index][1])+(adding[1]), (self.rootSystem.tipPositions[index][2])+(adding[2])))
+        #print(move)
+        if move in self.rootSystem.legalMoves():
+            self.rootSystem.addToTip(move[0], move[1])
+            #print("added")
+            #if fork:
+            #self.rootSystem.tipPositions.append(move)
+            #else:
+            self.rootSystem.tipPositions[index] = move[1]
             return 1
         else:
             return 0
 
 class Window(pyglet.window.Window):
-
     def __init__(self, *args, **kwargs):
         global LOG
         global INIT_ENERGY
@@ -1044,7 +1041,7 @@ class Window(pyglet.window.Window):
             for i in range(2):
                 self.rootSystems.append(RootSystem(self.world, (10*i,0,0) ))
             self.players.append(ExploreExploitPlayer(self.rootSystems[0], self,"0000111111", 10))#, "1111111111000000000000000000000000000000000000000000000000000000000000", 10))#made this a greedy player
-            self.players.append(ExploreExploitPlayer(self.rootSystems[1], self, "1111000000", 10))#"111111111010101010001010101011", 10))
+            self.players.append(DirectionsPlayer(self.rootSystems[1], self, "000011111100001111111111000000", 10))#"111111111010101010001010101011", 10))
 
         self.currentPlayerIndex = -1
         #drop all the already-read moves from memory.
