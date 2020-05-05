@@ -1,4 +1,5 @@
 import random
+import numpy as np
 
 class Player(object):
 
@@ -292,11 +293,12 @@ class ExploreExploitPlayer(Player):
         self.rootSystem.addToTip(move[0],move[1], fork)
 
 class DirectionsPlayer(Player):
-    def __init__(self, rootSystem, window, genes, gene_length):
-        super().__init__(rootSystem, window)
-        self.rootSystem.tipTex=TEXTURES[3]
-        self.genestrand = genes
-        self.gene_length = gene_length
+    def __init__(self, rootSystem, window, settings):
+        super().__init__(rootSystem, window, settings)
+        print(settings)
+        #self.rootSystem.tipTex=TEXTURES[3]
+        self.genestrand = settings["genes"]
+        self.gene_length = settings["gene_length"]
         self.traits = [0,0,0,0,0,0]
         self.readGenes()
         #self.probabilities = []

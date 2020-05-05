@@ -72,7 +72,7 @@ def printLog(filename = "logfile"):
     file.close()
 
 settings = set.Settings(all_settings)
-playersDict = {"Human Player":HumanPlayer, "RandomPlayer":RandomPlayer, "GreedyPlayer":GreedyPlayer, "GreedyForker":GreedyForker, "ExploreExploitPlayer":ExploreExploitPlayer}
+playersDict = {"Human Player":HumanPlayer, "RandomPlayer":RandomPlayer, "GreedyPlayer":GreedyPlayer, "GreedyForker":GreedyForker, "ExploreExploitPlayer":ExploreExploitPlayer, "DirectionsPlayer":DirectionsPlayer}
 
 
 class Window(pyglet.window.Window):
