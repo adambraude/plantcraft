@@ -1,4 +1,5 @@
 import random
+import numpy as np
 
 class Player(object):
 
@@ -129,6 +130,8 @@ class ExploreExploitPlayer(Player):
         self.gene_length = settings["gene_length"]
         self.traits = []
         self.readGenes()
+        self.length_stay = 0
+        self.moveToMake = self.determineLikelihood()
     
     # read gene strand
     def readGenes(self):
@@ -136,17 +139,19 @@ class ExploreExploitPlayer(Player):
         for i in range(int((len(self.genestrand))/self.gene_length)):
             count = 0
             for j in range(self.gene_length):
-                if self.genestrand[j] == '1':
+                if self.genestrand[j+i*self.gene_length] == '1':
                     count += 1
             self.traits.append(count)
+            self.traits.append(self.gene_length-count)
         
         # read gene strand for this particular player and determine probabilities
     def determineLikelihood(self):
         # runs the probabilities based on allele counts in genes
-        probExplore = random.randint(0, self.traits[0])
-        probExploit = random.randint(0, self.traits[1])
+        probExplore = self.traits[0]
+        self.length_stay = self.traits[1]
+        #probExploit = random.randint(0, self.traits[1])
         
-        if probExplore > probExploit:
+        if random.randint(0,self.gene_length) <= probExplore:
             return 0
         else:
             return 1
@@ -154,11 +159,18 @@ class ExploreExploitPlayer(Player):
         # choose a turn to make
     def takeTurn(self):
         #determine if in explore or exploit mode
-        moveToMake = self.determineLikelihood()
-        if moveToMake == 0:
-            self._exploitMove()
-        else:
-            self._exploreMove()
+        if self.length_stay == 0:
+            self.moveToMake = self.determineLikelihood()
+            if self.moveToMake == 0:
+                self._exploitMove()
+            else:
+                self._exploreMove()
+        else: 
+            self.length_stay -= self.length_stay
+            if self.moveToMake == 0:
+                self._exploitMove()
+            else:
+                self._exploreMove()
         #call the correct play turn based on the information from the string
         
 # lazy repurposing of greedy to search outwards for furthest nutrient
@@ -174,17 +186,18 @@ class ExploreExploitPlayer(Player):
         oldorigin = None
         fork = True
          
-        for b in self.rootSystem.world.nutrients:
-                for t in self.rootSystem.tips.keys():
-                    dist = abs(t[0]-b[0])+abs(t[1]-b[1])+abs(t[2]-b[2])
-                    if dist >= tdist and self.rootSystem.tips[t]:
-                        tdist = dist
-                        if b != target:
-                            olddist = tdist
-                            oldtarget = target
-                            oldorigin = origin
-                        target = b
-                        origin = t
+        for b in self.rootSystem.nutrients:
+            for t in self.rootSystem.tips.keys():
+                if (self.rootSystem.world.world[t] in self.rootSystem.absorb[:-1]): continue
+                dist = abs(t[0]-b[0])+abs(t[1]-b[1])+abs(t[2]-b[2])
+                if dist >= tdist and self.rootSystem.tips[t]:
+                    tdist = dist
+                    if b != target:
+                        olddist = tdist
+                        oldtarget = target
+                        oldorigin = origin
+                    target = b
+                    origin = t
  
         newmoves = []
         if target:
@@ -233,17 +246,18 @@ class ExploreExploitPlayer(Player):
         oldorigin = None
         fork = True
          #find the closest and second closest nutrients
-        for b in self.rootSystem.world.nutrients:
-                for t in self.rootSystem.tips.keys():
-                    dist = abs(t[0]-b[0])+abs(t[1]-b[1])+abs(t[2]-b[2])
-                    if dist <= tdist and self.rootSystem.tips[t]:
-                        tdist = dist
-                        if b != target:
-                            olddist = tdist
-                            oldtarget = target
-                            oldorigin = origin
-                        target = b
-                        origin = t
+        for b in self.rootSystem.nutrients:
+            for t in self.rootSystem.tips.keys():
+                if (self.rootSystem.world.world[t] in self.rootSystem.absorb[:-1]): continue
+                dist = abs(t[0]-b[0])+abs(t[1]-b[1])+abs(t[2]-b[2])
+                if dist <= tdist and self.rootSystem.tips[t]:
+                    tdist = dist
+                    if b != target:
+                        olddist = tdist
+                        oldtarget = target
+                        oldorigin = origin
+                    target = b
+                    origin = t
  
         newmoves = []
         if target:
@@ -277,3 +291,80 @@ class ExploreExploitPlayer(Player):
              
         move = random.choice(newmoves)
         self.rootSystem.addToTip(move[0],move[1], fork)
+
+class DirectionsPlayer(Player):
+    def __init__(self, rootSystem, window, settings):
+        super().__init__(rootSystem, window, settings)
+        #self.rootSystem.tipTex=TEXTURES[3]
+        self.genestrand = settings["genes"]
+        self.gene_length = settings["gene_length"]
+        self.traits = [0,0,0,0,0,0]
+        self.readGenes()
+        #self.probabilities = []
+        self.prob_order = []
+        #self.legal_moves
+    
+    # read gene strand
+    def readGenes(self):
+        # finds the count of alleles in a gene
+        #self.traits = []
+        for i in range(int((len(self.genestrand))/self.gene_length)):
+            count = 0
+            for j in range(self.gene_length):
+                if self.genestrand[(self.gene_length*i)+j] == '1':
+                    count += 1
+            self.traits[i] = count
+            i+=1
+            self.traits[i] = (self.gene_length-count)
+            
+            #print(self.traits)
+        
+        # read gene strand for this particular player and determine probabilities
+    def determineLikelihood(self):
+        
+        self.prob_order = np.argsort(self.traits) #use probabilities back to front and loop through 
+        #print(self.prob_order)
+        return self.prob_order
+        
+    def takeTurn(self):
+        #choose a move based on the likelihood
+        #legal_moves = self.rootSystem.legalMoves()
+        #print(legal_moves)
+        moves_order = self.determineLikelihood()
+        #print(moves_order)
+        set_move = 0
+        
+        # while a move is possible and has not been taken
+        for i in reversed(moves_order):
+            index = random.randint(1, len(self.rootSystem.tipPositions)-1)
+            if(set_move==1):
+                break
+            if(moves_order[i]==0):
+                set_move = self._move(index,(1,0,0))#,False)
+            if(moves_order[i]==1):
+                set_move = self._move(index,(-1,0,0))#,False)
+            if(moves_order[i]==2):
+                set_move = self._move(index,(0,1,0))#,False)
+            if(moves_order[i]==3):
+                set_move = self._move(index,(0,-1,0))#,False)
+            if(moves_order[i]==4):
+                set_move = self._move(index,(0,0,1))#,False)
+            if(moves_order[i]==5):
+                set_move = self._move(index,(0,0,-1))#,False)
+            #if(moves_order[i]==6):
+            #    set_move = self._move(index,(0,1,0),True)
+
+
+    def _move(self, index, adding):#, fork):
+        move = (self.rootSystem.tipPositions[index],((self.rootSystem.tipPositions[index][0])+(adding[0]),(self.rootSystem.tipPositions[index][1])+(adding[1]), (self.rootSystem.tipPositions[index][2])+(adding[2])))
+        #print(move)
+        if move in self.rootSystem.legalMoves():
+            self.rootSystem.addToTip(move[0], move[1])
+            #print("added")
+            #if fork:
+            #self.rootSystem.tipPositions.append(move)
+            #else:
+            self.rootSystem.tipPositions[index] = move[1]
+            return 1
+        else:
+            return 0

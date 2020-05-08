@@ -6,7 +6,7 @@ class RootSystem(object):
 
         self.mode = mode
         self.world = world
-        self.nutrients = []
+        self.nutrients = {}
 
         self.energy = self.world.set.INIT_ENERGY
         self.absorb = self.world.set.ABSORB
@@ -18,6 +18,7 @@ class RootSystem(object):
 
         if (not self.world.set.PROX): self.nutrients = self.world.nutrients
         if (not self.world.set.REPLAY): self._initialize(position)
+        self.position = position
 
 
     def _initialize(self, position):
@@ -25,6 +26,7 @@ class RootSystem(object):
 
         """
         x,y,z = position
+        
         if (self.world.set.LOGENABLED): self.world.set.LOG += "\n (R," + str(x)+ "," + str(y) + "," + str(z) + ",E:" + str(self.energy) + ")"
         self.tipPositions = [None, (x-1,y,z), (x+1,y,z), (x,y,z+1),(x,y,z-1)]
         for i in range(1,len(self.tipPositions)):
@@ -57,7 +59,7 @@ class RootSystem(object):
             if newTip in self.world.nutrients:
                 self.energy+=self.world.set.ENERGY_REWARD
                 collectedNutrient = True
-                if self.world.set.PROX: self.nutrients.remove(newTip)
+                if self.world.set.PROX: del self.nutrients[newTip]
             else: return False
 
         if newTip[1] > 0: return False
@@ -105,7 +107,7 @@ class RootSystem(object):
                         new_pos = (i, j, k)
                         # show nutrients within initial range
                         if new_pos in self.world.nutrients:
-                            self.nutrients.append(new_pos)
+                            self.nutrients[new_pos] = True
         # CASE: root growth in z-axis, expand range
         if x == x_old and y == y_old:
             for i in range (x-self.world.set.PROX_RANGE, x+self.world.set.PROX_RANGE + 1):
@@ -116,7 +118,7 @@ class RootSystem(object):
                         new_pos = (i, j, z-self.world.set.PROX_RANGE)
                     # show nutrients that are now within range
                     if new_pos in self.world.nutrients:
-                        self.nutrients.append(new_pos)
+                        self.nutrients[new_pos] = True
         # CASE: root growth in x-axis, expand range
         elif y == y_old and z == z_old:
             for j in range (y-self.world.set.PROX_RANGE, y+self.world.set.PROX_RANGE + 1):
@@ -127,7 +129,7 @@ class RootSystem(object):
                         new_pos = (x-self.world.set.PROX_RANGE, j, k)
                     # show nutrients that are now within range
                     if new_pos in self.world.nutrients:
-                        self.nutrients.append(new_pos)
+                        self.nutrients[new_pos] = True
         # CASE: root growth in y-axis, expand range
         elif z == z_old and x == x_old:
             for i in range (x-self.world.set.PROX_RANGE, x+self.world.set.PROX_RANGE + 1):
@@ -138,7 +140,7 @@ class RootSystem(object):
                         new_pos = (i, y-self.world.set.PROX_RANGE, k)
                     # show nutrients that are now within range
                     if new_pos in self.world.nutrients:
-                        self.nutrients.append(new_pos)
+                        self.nutrients[new_pos] = True
 
     def add_block(self, position, texture, immediate=True):
         """ Add a block with the given `texture` and `position` to the world.
@@ -187,7 +189,7 @@ class RootSystem(object):
 
         """
         del self.blocks[position]
-        self.world.add_block(position,texture,immediate)
+        self.world.remove_block(position,texture,immediate)
 
     def hit_test(self, position, vector, max_distance=8, ignore=[]):
         """ Line of sight search from current position. If a block is

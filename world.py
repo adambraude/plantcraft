@@ -3,7 +3,7 @@ import random
 from collections import deque
 from pyglet import image
 from pyglet.gl import *
-from pyglet.graphics import TextureGroup
+
 
 import settings as set
 
@@ -14,18 +14,21 @@ class World(object):
 
         self.mode = settings.TWODMODE
         self.density = settings.DENSITY
+        self.cluster = settings.CLUSTER
+        self.clusterp = settings.CLUSTERP
+        self.clustert = settings.CLUSTERTYPE
         self.set = settings
         # A Batch is a collection of vertex lists for batched rendering.
         self.batch = pyglet.graphics.Batch()
 
         # A TextureGroup manages an OpenGL texture.
-        self.group = TextureGroup(image.load(self.set.TEXTURE_PATH).get_texture())
+        self.group = settings.textureGroup
 
         # A mapping from position to the texture of the block at that position.
         # This defines all the blocks that are currently in the world.
         self.world = {}
 
-        self.nutrients = []
+        self.nutrients = {}
 
         # Same mapping as `world` but only contains blocks that are shown.
         self.shown = {}
@@ -48,10 +51,21 @@ class World(object):
 
         """
         if self.set.REPLAY: return
-        if self.mode:
-            self.addNutrients(self.density/100, (-40, 40, 0, 1, -40, 40))
-        else:
-            self.addNutrients(self.density/100, (-20, 20, -20, 0, -20, 20))
+        if (self.clustert == "None"):
+            if self.mode:
+                self.addNutrients(self.density/100, (-40, 40, 0, 1, -40, 40))
+            else:
+                self.addNutrients(self.density/100, (-20, 20, -20, 0, -20, 20))
+        elif (self.clustert == "Layered"):
+            if self.mode:
+                self.addClusterNutrients(self.density/100, (-40, 40, 0, 1, -40, 40), self.cluster, self.clusterp)
+            else:
+                self.addClusterNutrients(self.density/100, (-20, 20, -20, 0, -20, 20), self.cluster, self.clusterp)
+        elif (self.clustert == "Chunk"):
+            if self.mode:
+                self.addChunkNutrients(self.density/100, (-40, 40, 0, 1, -40, 40), self.cluster, self.clusterp)
+            else:
+                self.addChunkNutrients(self.density/100, (-20, 20, -20, 0, -20, 20), self.cluster, self.clusterp)
 
     @staticmethod
     def modByDirection(start, direc):
@@ -68,7 +82,6 @@ class World(object):
             bounds should be a 6-tuple (xmin,xmax,ymin,ymax,zmin,zmax)
 
         """
-        #global LOG
         if (self.set.LOGENABLED and self.set.LOGNUTRIENTSTART):self.set.LOG += "W"
         xmin,xmax,ymin,ymax,zmin,zmax = bounds
         for x in range(xmin,xmax):
@@ -76,10 +89,61 @@ class World(object):
                 for z in range(zmin, zmax):
                     if random.random()<density and ((x,y,z) not in self.world):
                         self.add_block((x,y,z), self.set.NUTRIENT_TEXTURE)
-                        self.nutrients.append((x,y,z))
                         if self.set.PROX:
                             self.hide_block((x, y, z))
                         if (self.set.LOGENABLED and self.set.LOGNUTRIENTSTART):self.set.LOG += "(4," + str(x) + "," + str(y) + ","+ str(z) + ")\n";
+
+
+    def addClusterNutrients(self, density, bounds,clusterCoeff=0.2, passes = 3):
+            """ Density is the probability that any given space will be a nutrient
+                bounds should be a 6-tuple (xmin,xmax,ymin,ymax,zmin,zmax)
+
+            """
+            if (self.set.LOGENABLED and self.set.LOGNUTRIENTSTART):self.set.LOG += "W"
+            xmin,xmax,ymin,ymax,zmin,zmax = bounds
+            for x in range(xmin,xmax):
+                for y in range(ymin, ymax):
+                    for z in range(zmin, zmax):
+                        if random.random()<density and ((x,y,z) not in self.world):
+                            self.add_block((x,y,z), self.set.NUTRIENT_TEXTURE)
+                            if self.set.PROX:
+                                self.hide_block((x, y, z))
+                            if (self.set.LOGENABLED and self.set.LOGNUTRIENTSTART):self.set.LOG += "(4," + str(x) + "," + str(y) + ","+ str(z) + ")\n";
+            #Do it again [passes] timesm, but only fill in spaces that are adjacent to a nutrient
+            for i in range(passes):
+                passc = []
+                for x in range(xmin,xmax):
+                    for y in range(ymin, ymax):
+                        for z in range(zmin, zmax):
+                            if random.random()<clusterCoeff and ((x,y,z) not in self.world) and (((x+1,y,z) in self.world) or ((x-1,y,z) in self.world)
+                                or ((x,y-1,z) in self.world) or ((x,y+1,z) in self.world) or ((x,y,z+1) in self.world) or ((x,y,z-1) in self.world)):
+                                passc.append((x,y,z))
+                for (x,y,z) in passc:
+                    self.add_block((x,y,z), self.set.NUTRIENT_TEXTURE)
+                    if self.set.PROX:
+                        self.hide_block((x, y, z))
+                    if (self.set.LOGENABLED and self.set.LOGNUTRIENTSTART):self.set.LOG += "(4," + str(x) + "," + str(y) + ","+ str(z) + ")\n";
+
+    #Cuts the world into cubes and assigns a different density to each cube
+    def addChunkNutrients(self, density, bounds,variance=0.9, chunkSize = 5):
+            """ Density is the probability that any given space will be a nutrient
+                bounds should be a 6-tuple (xmin,xmax,ymin,ymax,zmin,zmax)
+
+            """
+            if (self.set.LOGENABLED and self.set.LOGNUTRIENTSTART):self.set.LOG += "W"
+            xmin,xmax,ymin,ymax,zmin,zmax = bounds
+            for x in range(xmin,xmax, chunkSize):
+                for y in range(ymin, ymax, chunkSize):
+                    for z in range(zmin, zmax,chunkSize):
+                        d = density*(random.random()*variance*2+(1-variance))
+                        for xp in range(0,chunkSize):
+                            for yp in range(0, chunkSize):
+                                for zp in range(0, chunkSize):
+                                    if random.random()<d and ((x,y,z) not in self.world):
+                                        self.add_block((x+xp,y+yp,z+zp), self.set.NUTRIENT_TEXTURE)
+                                        if self.set.PROX:
+                                            self.hide_block((x+xp, y+yp, z+zp))
+                                        if (self.set.LOGENABLED and self.set.LOGNUTRIENTSTART):self.set.LOG += "(4," + str(x+xp) + "," + str(y+yp) + ","+ str(z+zp) + ")\n";
 
 
     def exposed(self, position):
@@ -95,6 +159,7 @@ class World(object):
 
     def add_block(self, position, texture, immediate=True):
         """ Add a block with the given `texture` and `position` to the world.
+            If the block is part of a root system, use RootSystem's add_block instead
 
         Parameters
         ----------
@@ -109,12 +174,11 @@ class World(object):
         """
         if position in self.world:
             self.remove_block(position, immediate)
+        if texture == self.set.NUTRIENT_TEXTURE:
+            self.nutrients[position] = True
         self.world[position] = texture
-        #self.sectors.setdefault(sectorize(position), []).append(position)
         if immediate:
-            if self.exposed(position):
-                self.show_block(position)
-            #self.check_neighbors(position)
+            self.show_block(position)
 
     def uncolorBlock(self, position, immediate=True):
         if position not in self.world: return
@@ -130,6 +194,7 @@ class World(object):
 
     def remove_block(self, position, immediate=True):
         """ Remove the block at the given `position`.
+            If the block is part of a root system, use RootSystem's method instead
 
         Parameters
         ----------
@@ -140,6 +205,9 @@ class World(object):
 
         """
         del self.world[position]
+        if position in self.nutrients:
+            del self.nutrients[position]
+
         #self.sectors[sectorize(position)].remove(position)
         if immediate:
             if position in self.shown:
@@ -151,6 +219,7 @@ class World(object):
         state is current. This means hiding blocks that are not exposed and
         ensuring that all exposed blocks are shown. Usually used after a block
         is added or removed.
+        Use of this method causes problems with proximity sensing
 
         """
         x, y, z = position

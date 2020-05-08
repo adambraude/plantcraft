@@ -1,12 +1,15 @@
 import sys
+from pyglet import image
+from pyglet.graphics import TextureGroup
 
 class Settings:
     def __init__(self, given={}):
+        #Process settings from the menu and create an object with the appropriate properties
         self.TEXTURES = (calcTextureCoords(1), calcTextureCoords(2), calcTextureCoords(3), calcTextureCoords(4), calcTextureCoords(5),
                                                     calcTextureCoords(6),calcTextureCoords(7),calcTextureCoords(8),calcTextureCoords(9))
         self.TEXTURE_COLORS = (None, (128,255,255,255), (128,180,255,255), (204, 128, 255, 255))
         
-        self.LOGENABLED = True
+        self.LOGENABLED = False
         self.LOG = ""
         if "PROX" in given: self.PROX = given["PROX"]
         else: self.PROX = True
@@ -20,15 +23,21 @@ class Settings:
         if "REWARD" in given: self.ENERGY_REWARD = given["REWARD"]*self.ROOT_COST
         else: self.ENERGY_REWARD = 20
 
+        if "GOAL" in given: self.GOAL = given["GOAL"]*self.ROOT_COST
+        else: self.GOAL = 20
+
         if "REPLAY" in given: self.REPLAY = given["REPLAY"]
         else: self.REPLAY = False
         if "REPLAYFILE" in given: self.REPLAY_FILE = given["REPLAYFILE"]
         else: self.REPLAY_FILE = "logfile"
 
         self.TEXTURE_PATH = "roots.png"
-        self.LOGNUTRIENTSTART = True
+        self.LOGNUTRIENTSTART = False
 
         self.TICKS_PER_SEC = 60
+
+        self.textureGroup = TextureGroup(image.load(self.TEXTURE_PATH).get_texture())
+
 
         self.FACES = [( 0, 1, 0), ( 0,-1, 0), (-1, 0, 0), ( 1, 0, 0), ( 0, 0, 1), ( 0, 0,-1),]
         self.LATFACES = [(-1, 0, 0), ( 1, 0, 0), ( 0, 0, 1), ( 0, 0,-1)]
@@ -40,8 +49,26 @@ class Settings:
         else: self.TWODMODE = False
         if given["DENSITY"]: self.DENSITY = given["DENSITY"]
         else: self.DENSITY = 5
+        if given["CLUSTER"]: self.CLUSTER = given["CLUSTER"]
+        else: self.CLUSTER = 5
+        if given["CLUSTERP"]: self.CLUSTERP = int(given["CLUSTERP"])
+        else: self.CLUSTERP = 3
+        if given["CLUSTERTYPE"]: self.CLUSTERTYPE = given["CLUSTERTYPE"]
+        else: self.CLUSTERP = "None"
         if given["players"]: self.players = given["players"]
         else: self.players = ["Human Player", "RandomPlayer"]
+        if given["whatdo"]:
+            if given["whatdo"] == 'Play':
+                self.whatdo = 0
+            if given["whatdo"] == 'CPU best of 100':
+                self.whatdo = 1
+            if given["whatdo"] == 'Breeding':
+                self.whatdo = 2
+        else:
+            self.whatdo = 0
+            
+    def setPlayers(self, players):
+        self.players = players
 
 
     def cube_vertices(self,x, y, z, n):
