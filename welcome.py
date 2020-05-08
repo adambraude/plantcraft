@@ -30,9 +30,9 @@ def _settings():
             [sg.Text('Select nutrient density... (10 ==> ~10% of blocks are nutrients)', font=("Helvetica", 10))],
 
             [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 1.2, resolution=0.1, key="density")],
-            [sg.Text('Select chunk variance (higher->more variance)             ', font=("Helvetica", 10), key="n1")],
+            [sg.Text('Select nutrient clustering (higher->more clustering)', font=("Helvetica", 10), key="n1")],
             [sg.Slider(range=(0, 1), orientation = 'h', size = (34,20), default_value = 0.2, resolution=0.01, key="cluster")],
-            [sg.Text('Select chunk size                       ', font=("Helvetica", 10), key="n2")],
+            [sg.Text('Select nutrient clustering passes (more->larger clusters)', font=("Helvetica", 10), key="n2")],
             [sg.Slider(range=(0, 10), orientation = 'h', size = (34,20), default_value = 3, resolution=1, key="clusterp")],
 
             # Allow nutrient proximity?
@@ -64,7 +64,10 @@ def _settings():
             [sg.Slider(range=(1, 100), orientation = 'h', size = (34,20), default_value = 8, resolution=1, key="fork")],
 
             [sg.Text('Select nutrient reward for claiming a nutrient block (as a mutliple of the cost to grow 1 block)', font=("Helvetica", 10))],
-            [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 2, resolution=1, key="reward")]
+            [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 2, resolution=1, key="reward")],
+
+            [sg.Text('Select energy goal (as a mutliple of the cost to grow 1 block)', font=("Helvetica", 10))],
+            [sg.Slider(range=(100, 1000), orientation = 'h', size = (34,20), default_value = 100, resolution=10, key="goal")]
             
             ]
 
@@ -97,7 +100,7 @@ def _settings():
                 players.append({"type":values["player2"]})
             out = { "players":players, "mode":values["mode"], "PROX":values["proxy"], "PROX_RANGE":values["proxydist"], 
                     "DENSITY":values["density"], "STARTE":values["starte"], "FORK":values["fork"], "REWARD":values["reward"], 
-                    "REPLAY":values["replay"], "REPLAYFILE":values["replayf"], "CLUSTER":values["cluster"], "CLUSTERP":values["clusterp"], "CLUSTERTYPE":values["n0"], "whatdo":values["whatdo"]}
+                    "REPLAY":values["replay"], "REPLAYFILE":values["replayf"], "CLUSTER":values["cluster"], "CLUSTERP":values["clusterp"], "CLUSTERTYPE":values["n0"], "whatdo":values["whatdo"], "GOAL":values["goal"]}
             window.close()
             return out
         if event == 'Cancel':

@@ -23,6 +23,9 @@ class Settings:
         if "REWARD" in given: self.ENERGY_REWARD = given["REWARD"]*self.ROOT_COST
         else: self.ENERGY_REWARD = 20
 
+        if "GOAL" in given: self.GOAL = given["GOAL"]*self.ROOT_COST
+        else: self.GOAL = 20
+
         if "REPLAY" in given: self.REPLAY = given["REPLAY"]
         else: self.REPLAY = False
         if "REPLAYFILE" in given: self.REPLAY_FILE = given["REPLAYFILE"]

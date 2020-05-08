@@ -37,7 +37,6 @@ NUM_KEYS = (key._1, key._2, key._3, key._4, key._5, key._6, key._7, key._8, key.
 
 #END = 'death'
 END = 'points'
-WIN_POINTS = 1000
 
 #def adjust_settings(settings, TWODMODE):
 #    if settings[2][3] == '2D mode':
@@ -245,7 +244,7 @@ class Window(pyglet.window.Window):
             if system.energy <= 0:
                 self.end = "death"
                 return True
-            if system.energy >= WIN_POINTS:
+            if system.energy >= settings.GOAL:
                 self.end = "win"
                 return True
         if not self.world.nutrients:
@@ -254,11 +253,11 @@ class Window(pyglet.window.Window):
         return False
 
     def updateStalks(self):
-        if self.currentPlayer().rootSystem.energy >= (self.stalks[self.currentPlayerIndex]+1) * (WIN_POINTS/11):
+        if self.currentPlayer().rootSystem.energy >= (self.stalks[self.currentPlayerIndex]+1) * (settings.GOAL/11):
             self.stalks[self.currentPlayerIndex] += 1
             x, y, z = self.currentPlayer().rootSystem.position
             self.currentPlayer().rootSystem.add_block((x,y+self.stalks[self.currentPlayerIndex],z), settings.STALK_TEXTURE)
-        elif self.currentPlayer().rootSystem.energy < self.stalks[self.currentPlayerIndex] * (WIN_POINTS/11):
+        elif self.currentPlayer().rootSystem.energy < self.stalks[self.currentPlayerIndex] * (settings.GOAL/11):
             x, y, z = self.currentPlayer().rootSystem.position
             self.currentPlayer().rootSystem.world.remove_block((x,y+self.stalks[self.currentPlayerIndex],z))
             self.stalks[self.currentPlayerIndex] -= 1
