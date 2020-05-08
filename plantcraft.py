@@ -73,7 +73,7 @@ def printLog(filename = "logfile"):
     file.close()
 
 settings = set.Settings(all_settings)
-playersDict = {"Human Player":HumanPlayer, "RandomPlayer":RandomPlayer, "GreedyPlayer":GreedyPlayer, "GreedyForker":GreedyForker, "ExploreExploitPlayer":APlayer}
+playersDict = {"Human Player":HumanPlayer, "RandomPlayer":RandomPlayer, "GreedyPlayer":GreedyPlayer, "GreedyForker":GreedyForker, "APlayer":APlayer, "ExploreExploitPlayer":ExploreExploitPlayer}
 
 
 class Window(pyglet.window.Window):
@@ -660,7 +660,7 @@ def main():
         settings.GFX = False
         window = Window(width=0, height=0, caption='PlantCraft', resizable=False)
         numPlayers = 10
-        numGenerations = 50
+        numGenerations = 200
         currentGeneration = []
         for i in range(numPlayers):
             genome = ""

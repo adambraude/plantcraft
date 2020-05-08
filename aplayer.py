@@ -122,17 +122,16 @@ class APlayer(Player):
                     if abs(m[1][0]-target[0])+abs(m[1][1]-target[1])+abs(m[1][2]-target[2]) < tdist+margin:
                         newmoves.append(m)
 
-        if target:
-            for m in moves:
-                if abs(m[1][0]-target[0])+abs(m[1][1]-target[1])+abs(m[1][2]-target[2]) > tdist:
-                    newmoves.append(m)
-
         if len(newmoves)==0: return
              
         move = random.choice(newmoves)
         if self.alttarget:
             newdist = abs(target[0]-self.alttarget[0])+abs(target[1]-self.alttarget[1])+abs(target[2]-self.alttarget[2])
             olddist = abs(move[0][0]-self.alttarget[0])+abs(move[0][1]-self.alttarget[1])+abs(move[0][2]-self.alttarget[2])
+            for t in self.rootSystem.tips.keys():
+                if olddist > abs(t[0]-self.alttarget[0])+abs(t[1]-self.alttarget[1])+abs(t[2]-self.alttarget[2]):
+                    fork = False
+                    continue
             if fork and (newdist-olddist - self.traits[5]^2 < self.rootSystem.world.set.FORK_COST/self.rootSystem.world.set.ROOT_COST):
                 fork = False
         else:
