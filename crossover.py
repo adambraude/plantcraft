@@ -18,7 +18,7 @@ def flip(string):
 
 def _point_mutation(string1, string2):
     # mutate random spots
-    mutationChance = 0.5
+    mutationChance = 0.2
     if random.random() < mutationChance:
         string1 = flip(string1)
         string2 = flip(string2)
@@ -37,6 +37,7 @@ def _crossover(string1, string2):
 
 def _make_babies(string1, string2):
     child1, child2 = _crossover(string1, string2)
+    child1, child2 = _point_mutation(string1, string2)
     return child1, child2
  
     

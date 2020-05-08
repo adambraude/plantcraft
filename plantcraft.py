@@ -184,7 +184,7 @@ class Window(pyglet.window.Window):
                 if p["type"] in playersDict:
                     player = playersDict[p["type"]]
                     if player is not None:
-                        self.rootSystems.append(RootSystem(self.world, (10*i,0,0),settings.TWODMODE))
+                        self.rootSystems.append(RootSystem(self.world, (10*i-5,0,0),settings.TWODMODE))
                         self.players.append(player(self.rootSystems[i], self, p))
                         self.stalks.append(0)
                         i += 1
@@ -673,7 +673,7 @@ def main():
         settings.GFX = False
         window = Window(width=0, height=0, caption='PlantCraft', resizable=False)
         numPlayers = 10
-        numGenerations = 200
+        numGenerations = 100
         currentGeneration = []
         for i in range(numPlayers):
             gc = 1
@@ -734,7 +734,7 @@ def main():
                             count += 1
                     traits.append(count)
                 print("Gen " + str(g) + " player " + currentGeneration[i]["genes"] + " " + str(traits) + " [fitness: " + str(fitness[i]) + "] [avg end energy: " + str(math.ceil(energy[i]/(len(currentGeneration)-1))) + "] [avg turns to win: " + (str(math.ceil(wturns[i]/truewins[i])) if truewins[i]>0 else "no wins") + "]")
-            print("Generation total stats: wins: " + str(ends["win"]) + " deaths: " + str(ends["death"]) + " sweeps: " + str(ends["sweep"]) + " avg turns taken: " + str(math.ceil(turns/(2*(len(currentGeneration)-1)))))
+            print("Generation total stats: wins: " + str(ends["win"]) + " deaths: " + str(ends["death"]) + " sweeps: " + str(ends["sweep"]) + " avg turns taken: " + str(math.ceil(2*turns/((len(currentGeneration)-1)*(len(currentGeneration)-1)))))
             nextGeneration = []
             while len(nextGeneration) < numPlayers:
                 parent1 = random.choices(currentGeneration, weights=fitness, k=1)[0]
