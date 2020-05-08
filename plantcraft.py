@@ -78,7 +78,7 @@ playersDict = {"Human Player":HumanPlayer, "RandomPlayer":RandomPlayer, "GreedyP
 
 class Window(pyglet.window.Window):
 
-    
+
 
     def __init__(self, *args, **kwargs):
         super(Window, self).__init__(*args, **kwargs)
@@ -213,7 +213,7 @@ class Window(pyglet.window.Window):
         self.nextTurn()
 
 
-        
+
         #self.alive = 1
 
     def nextTurn(self):
@@ -249,7 +249,7 @@ class Window(pyglet.window.Window):
                 return True
         if not self.world.nutrients:
             self.end = "sweep"
-            return True       
+            return True
         return False
 
     def updateStalks(self):
@@ -261,6 +261,18 @@ class Window(pyglet.window.Window):
             x, y, z = self.currentPlayer().rootSystem.position
             self.currentPlayer().rootSystem.world.remove_block((x,y+self.stalks[self.currentPlayerIndex],z))
             self.stalks[self.currentPlayerIndex] -= 1
+
+    def drawFlower(self):
+        x, y, z = self.currentPlayer().rootSystem.position
+        self.currentPlayer().rootSystem.add_block((x,y+self.stalks[self.currentPlayerIndex]+2,z), settings.FLOWER_CENTER)
+        self.currentPlayer().rootSystem.add_block((x+1,y+self.stalks[self.currentPlayerIndex]+2,z), settings.FLOWER_TEX)
+        self.currentPlayer().rootSystem.add_block((x+-1,y+self.stalks[self.currentPlayerIndex]+2,z), settings.FLOWER_TEX)
+        self.currentPlayer().rootSystem.add_block((x,y+self.stalks[self.currentPlayerIndex]+1,z), settings.FLOWER_TEX)
+        self.currentPlayer().rootSystem.add_block((x+1,y+self.stalks[self.currentPlayerIndex]+1,z), settings.FLOWER_TEX)
+        self.currentPlayer().rootSystem.add_block((x-1,y+self.stalks[self.currentPlayerIndex]+1,z), settings.FLOWER_TEX)
+        self.currentPlayer().rootSystem.add_block((x,y+self.stalks[self.currentPlayerIndex]+3,z), settings.FLOWER_TEX)
+        self.currentPlayer().rootSystem.add_block((x+1,y+self.stalks[self.currentPlayerIndex]+3,z), settings.FLOWER_TEX)
+        self.currentPlayer().rootSystem.add_block((x-1,y+self.stalks[self.currentPlayerIndex]+3,z), settings.FLOWER_TEX)
 
     def set_exclusive_mouse(self, exclusive):
         """ If `exclusive` is True, the game will capture the mouse, if False
@@ -305,6 +317,7 @@ class Window(pyglet.window.Window):
             self._update(dt / m)
         if settings.GFX:
             if self.checkEnd():
+                self.drawFlower()
                 self.done = True
                 maxi = self.rootSystems[0].energy
                 self.winner = 0
@@ -665,10 +678,10 @@ def main():
         for i in range(numPlayers):
             gc = 1
             type = "ExploreExploitPlayer"
-            if settings.players[0]["type"] == "APlayer": 
+            if settings.players[0]["type"] == "APlayer":
                 gc = 8
                 type = settings.players[0]["type"]
-            if settings.players[0]["type"] == "DirectionsPlayer": 
+            if settings.players[0]["type"] == "DirectionsPlayer":
                 gc = 5
                 type = settings.players[0]["type"]
             genome = ""
@@ -698,12 +711,12 @@ def main():
                     pyglet.app.run()
                     if window.winner == 0:
                         fitness[i]+=1
-                        if window.end == "win": 
+                        if window.end == "win":
                             wturns[i] += window.turnCount
                             truewins[i] += 1
                     else:
                         fitness[j]+=1
-                        if window.end == "win": 
+                        if window.end == "win":
                             wturns[j] += window.turnCount
                             truewins[j] += 1
                     energy[i] += window.stats["energy"][0]

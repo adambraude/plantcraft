@@ -8,7 +8,7 @@ class Settings:
         self.TEXTURES = (calcTextureCoords(1), calcTextureCoords(2), calcTextureCoords(3), calcTextureCoords(4), calcTextureCoords(5),
                                                     calcTextureCoords(6),calcTextureCoords(7),calcTextureCoords(8),calcTextureCoords(9))
         self.TEXTURE_COLORS = (None, (128,255,255,255), (128,180,255,255), (204, 128, 255, 255))
-        
+
         self.LOGENABLED = False
         self.LOG = ""
         if "PROX" in given: self.PROX = given["PROX"]
@@ -43,6 +43,8 @@ class Settings:
         self.LATFACES = [(-1, 0, 0), ( 1, 0, 0), ( 0, 0, 1), ( 0, 0,-1)]
         self.ABSORB = (self.TEXTURES[5],self.TEXTURES[6],self.TEXTURES[7],self.TEXTURES[8], self.TEXTURES[2])
         self.STALK_TEXTURE = calcTextureCoords(0)
+        self.FLOWER_TEX = self.TEXTURES[3]
+        self.FLOWER_CENTER = self.TEXTURES[1]
         self.NUTRIENT_TEXTURE = self.TEXTURES[4]
         #the lower function makes a lowercase string
         if given["mode"].lower() == "2D mode": self.TWODMODE = True
@@ -66,7 +68,7 @@ class Settings:
                 self.whatdo = 2
         else:
             self.whatdo = 0
-            
+
     def setPlayers(self, players):
         self.players = players
 
@@ -110,5 +112,3 @@ def normalize(position):
     x, y, z = position
     x, y, z = (int(round(x)), int(round(y)), int(round(z)))
     return (x, y, z)
-
-    
