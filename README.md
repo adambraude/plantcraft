@@ -18,8 +18,13 @@ This should bring up the PlantCraft GUI, where you can specify the settings for 
 
 # The Players
 **Human Player**: Use to play games against the AI in Play Mode. You can play hotseat with two Human Players. We don't know why anyone would do that.
+
 **Random Player**: Picking legal moves at random is a bad idea in this game, but no one told this algorithm that. Never forks because we didn't want to torture it more.
+
 **GreedyPlayer**: Always makes a beeline for the nearest known nutrient. Never forks.
+
 **GreedyForker**: Always charges blindly toward the nearest known nutrient. Will fork in order to reduce the cost of approaching the second closest nutrient.
+
 **ExploreExploitPlayer**: Needs a gene with length specified on the slider. Gene determines how likely it is to pursue the nearest/farthest nutrient.
+
 **DirectionsPlayer**, **APlayer**: Different kinds of genetic player. DirectionsPlayer needs 5 genes, ExploreExploit needs 8.
