@@ -4,6 +4,7 @@ from pyglet.graphics import TextureGroup
 
 class Settings:
     def __init__(self, given={}):
+        #Process settings from the menu and create an object with the appropriate properties
         self.TEXTURES = (calcTextureCoords(1), calcTextureCoords(2), calcTextureCoords(3), calcTextureCoords(4), calcTextureCoords(5),
                                                     calcTextureCoords(6),calcTextureCoords(7),calcTextureCoords(8),calcTextureCoords(9))
         self.TEXTURE_COLORS = (None, (128,255,255,255), (128,180,255,255), (204, 128, 255, 255))

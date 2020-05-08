@@ -1,4 +1,5 @@
 import random
+import numpy as np
 
 class Player(object):
 
@@ -290,3 +291,80 @@ class ExploreExploitPlayer(Player):
              
         move = random.choice(newmoves)
         self.rootSystem.addToTip(move[0],move[1], fork)
+
+class DirectionsPlayer(Player):
+    def __init__(self, rootSystem, window, settings):
+        super().__init__(rootSystem, window, settings)
+        #self.rootSystem.tipTex=TEXTURES[3]
+        self.genestrand = settings["genes"]
+        self.gene_length = settings["gene_length"]
+        self.traits = [0,0,0,0,0,0]
+        self.readGenes()
+        #self.probabilities = []
+        self.prob_order = []
+        #self.legal_moves
+    
+    # read gene strand
+    def readGenes(self):
+        # finds the count of alleles in a gene
+        #self.traits = []
+        for i in range(int((len(self.genestrand))/self.gene_length)):
+            count = 0
+            for j in range(self.gene_length):
+                if self.genestrand[(self.gene_length*i)+j] == '1':
+                    count += 1
+            self.traits[i] = count
+            i+=1
+            self.traits[i] = (self.gene_length-count)
+            
+            #print(self.traits)
+        
+        # read gene strand for this particular player and determine probabilities
+    def determineLikelihood(self):
+        
+        self.prob_order = np.argsort(self.traits) #use probabilities back to front and loop through 
+        #print(self.prob_order)
+        return self.prob_order
+        
+    def takeTurn(self):
+        #choose a move based on the likelihood
+        #legal_moves = self.rootSystem.legalMoves()
+        #print(legal_moves)
+        moves_order = self.determineLikelihood()
+        #print(moves_order)
+        set_move = 0
+        
+        # while a move is possible and has not been taken
+        for i in reversed(moves_order):
+            index = random.randint(1, len(self.rootSystem.tipPositions)-1)
+            if(set_move==1):
+                break
+            if(moves_order[i]==0):
+                set_move = self._move(index,(1,0,0))#,False)
+            if(moves_order[i]==1):
+                set_move = self._move(index,(-1,0,0))#,False)
+            if(moves_order[i]==2):
+                set_move = self._move(index,(0,1,0))#,False)
+            if(moves_order[i]==3):
+                set_move = self._move(index,(0,-1,0))#,False)
+            if(moves_order[i]==4):
+                set_move = self._move(index,(0,0,1))#,False)
+            if(moves_order[i]==5):
+                set_move = self._move(index,(0,0,-1))#,False)
+            #if(moves_order[i]==6):
+            #    set_move = self._move(index,(0,1,0),True)
+
+
+    def _move(self, index, adding):#, fork):
+        move = (self.rootSystem.tipPositions[index],((self.rootSystem.tipPositions[index][0])+(adding[0]),(self.rootSystem.tipPositions[index][1])+(adding[1]), (self.rootSystem.tipPositions[index][2])+(adding[2])))
+        #print(move)
+        if move in self.rootSystem.legalMoves():
+            self.rootSystem.addToTip(move[0], move[1])
+            #print("added")
+            #if fork:
+            #self.rootSystem.tipPositions.append(move)
+            #else:
+            self.rootSystem.tipPositions[index] = move[1]
+            return 1
+        else:
+            return 0

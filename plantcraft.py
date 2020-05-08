@@ -73,7 +73,8 @@ def printLog(filename = "logfile"):
     file.close()
 
 settings = set.Settings(all_settings)
-playersDict = {"Human Player":HumanPlayer, "RandomPlayer":RandomPlayer, "GreedyPlayer":GreedyPlayer, "GreedyForker":GreedyForker, "APlayer":APlayer, "ExploreExploitPlayer":ExploreExploitPlayer}
+
+playersDict = {"Human Player":HumanPlayer, "RandomPlayer":RandomPlayer, "GreedyPlayer":GreedyPlayer, "GreedyForker":GreedyForker, "APlayer":APlayer, "DirectionsPlayer":DirectionsPlayer, "ExploreExploitPlayer":ExploreExploitPlayer}
 
 
 class Window(pyglet.window.Window):
@@ -82,7 +83,7 @@ class Window(pyglet.window.Window):
 
     def __init__(self, *args, **kwargs):
         super(Window, self).__init__(*args, **kwargs)
-        self.init()
+        if not settings.whatdo == 2: self.init()
 
     def init(self):
         # Whether or not the window exclusively captures the mouse.
@@ -663,13 +664,21 @@ def main():
         numGenerations = 200
         currentGeneration = []
         for i in range(numPlayers):
+            gc = 1
+            type = "ExploreExploitPlayer"
+            if settings.players[0]["type"] == "APlayer": 
+                gc = 8
+                type = settings.players[0]["type"]
+            if settings.players[0]["type"] == "DirectionsPlayer": 
+                gc = 5
+                type = settings.players[0]["type"]
             genome = ""
-            for j in range(80):
+            for j in range(gc * 10):
                 if (random.random() > 0.5):
                     genome += "1"
                 else:
                     genome += "0"
-            currentGeneration.append({"type":"ExploreExploitPlayer", "genes":genome, "gene_length":10})
+            currentGeneration.append({"type":type, "genes":genome, "gene_length":10})
         for g in range(numGenerations):
             gstart = time.time()
             fitness = [0 for g in currentGeneration]
@@ -684,6 +693,7 @@ def main():
                     p2 = currentGeneration[j]
                     settings.setPlayers([p1,p2])
                     window.id = g
+                    window.init()
                     # Hide the mouse cursor and prevent the mouse from leaving the window.
                     setup()
                     pyglet.app.run()
@@ -701,7 +711,6 @@ def main():
                     energy[j] += window.stats["energy"][1]
                     ends[window.end] += 1
                     turns += window.turnCount
-                    window.init()
             for i in range(len(currentGeneration)):
                 traits = []
                 gene = currentGeneration[i]["genes"]
@@ -718,9 +727,9 @@ def main():
             while len(nextGeneration) < numPlayers:
                 parent1 = random.choices(currentGeneration, weights=fitness, k=1)[0]
                 parent2 = random.choices(currentGeneration, weights=fitness, k=1)[0]
-                kids = crossover._make_babies(parent1["genes"], parent2["genes"], 10)
-                nextGeneration.append({"type":"ExploreExploitPlayer", "genes":kids[0], "gene_length":10})
-                nextGeneration.append({"type":"ExploreExploitPlayer", "genes":kids[1], "gene_length":10})
+                kids = crossover._make_babies(parent1["genes"], parent2["genes"])
+                nextGeneration.append({"type":type, "genes":kids[0], "gene_length":10})
+                nextGeneration.append({"type":type, "genes":kids[1], "gene_length":10})
             end = time.time()
             print("Time taken by generation: " + str((end-gstart)/60) + " minutes: " + str((end-gstart)/turns) + " seconds per turn")
             currentGeneration = nextGeneration

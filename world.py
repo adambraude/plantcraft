@@ -82,7 +82,6 @@ class World(object):
             bounds should be a 6-tuple (xmin,xmax,ymin,ymax,zmin,zmax)
 
         """
-        #global LOG
         if (self.set.LOGENABLED and self.set.LOGNUTRIENTSTART):self.set.LOG += "W"
         xmin,xmax,ymin,ymax,zmin,zmax = bounds
         for x in range(xmin,xmax):
@@ -100,7 +99,6 @@ class World(object):
                 bounds should be a 6-tuple (xmin,xmax,ymin,ymax,zmin,zmax)
 
             """
-            #global LOG
             if (self.set.LOGENABLED and self.set.LOGNUTRIENTSTART):self.set.LOG += "W"
             xmin,xmax,ymin,ymax,zmin,zmax = bounds
             for x in range(xmin,xmax):
@@ -111,6 +109,7 @@ class World(object):
                             if self.set.PROX:
                                 self.hide_block((x, y, z))
                             if (self.set.LOGENABLED and self.set.LOGNUTRIENTSTART):self.set.LOG += "(4," + str(x) + "," + str(y) + ","+ str(z) + ")\n";
+            #Do it again [passes] timesm, but only fill in spaces that are adjacent to a nutrient
             for i in range(passes):
                 passc = []
                 for x in range(xmin,xmax):
@@ -125,12 +124,12 @@ class World(object):
                         self.hide_block((x, y, z))
                     if (self.set.LOGENABLED and self.set.LOGNUTRIENTSTART):self.set.LOG += "(4," + str(x) + "," + str(y) + ","+ str(z) + ")\n";
 
+    #Cuts the world into cubes and assigns a different density to each cube
     def addChunkNutrients(self, density, bounds,variance=0.9, chunkSize = 5):
             """ Density is the probability that any given space will be a nutrient
                 bounds should be a 6-tuple (xmin,xmax,ymin,ymax,zmin,zmax)
 
             """
-            #global LOG
             if (self.set.LOGENABLED and self.set.LOGNUTRIENTSTART):self.set.LOG += "W"
             xmin,xmax,ymin,ymax,zmin,zmax = bounds
             for x in range(xmin,xmax, chunkSize):
@@ -160,6 +159,7 @@ class World(object):
 
     def add_block(self, position, texture, immediate=True):
         """ Add a block with the given `texture` and `position` to the world.
+            If the block is part of a root system, use RootSystem's add_block instead
 
         Parameters
         ----------
@@ -177,11 +177,8 @@ class World(object):
         if texture == self.set.NUTRIENT_TEXTURE:
             self.nutrients[position] = True
         self.world[position] = texture
-        #self.sectors.setdefault(sectorize(position), []).append(position)
         if immediate:
-            #if self.exposed(position):
-                self.show_block(position)
-            #self.check_neighbors(position)
+            self.show_block(position)
 
     def uncolorBlock(self, position, immediate=True):
         if position not in self.world: return
@@ -197,6 +194,7 @@ class World(object):
 
     def remove_block(self, position, immediate=True):
         """ Remove the block at the given `position`.
+            If the block is part of a root system, use RootSystem's method instead
 
         Parameters
         ----------
@@ -221,6 +219,7 @@ class World(object):
         state is current. This means hiding blocks that are not exposed and
         ensuring that all exposed blocks are shown. Usually used after a block
         is added or removed.
+        Use of this method causes problems with proximity sensing
 
         """
         x, y, z = position

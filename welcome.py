@@ -26,7 +26,7 @@ def _settings():
             [sg.Text('File', size=(8, 1)), sg.Input(key="replayf"), sg.FileBrowse()],
 
             [sg.Text('Select a nutrient clustering mode', font=("Helvetica", 10))],
-            [sg.InputCombo(('None', 'Chunk', 'Layered'), size=(35, 10), default_value='Chunk', key="n0", enable_events=True)],
+            [sg.InputCombo(('None', 'Chunk', 'Layered'), size=(35, 10), default_value='Layered', key="n0", enable_events=True)],
             [sg.Text('Select nutrient density... (10 ==> ~10% of blocks are nutrients)', font=("Helvetica", 10))],
 
             [sg.Slider(range=(0, 100), orientation = 'h', size = (34,20), default_value = 1.2, resolution=0.1, key="density")],
@@ -50,11 +50,11 @@ def _settings():
             [sg.Text('Select a board configuration', font=("Helvetica", 10))],
             [sg.InputCombo(('3D mode', '2D mode'), size=(35, 10), default_value='3D mode', key="mode")],
             [sg.Text('Select Player 1', font=("Helvetica", 10))],
-            [sg.InputCombo(('Human Player', 'RandomPlayer', 'GreedyPlayer', 'GreedyForker', 'ExploreExploitPlayer', 'APlayer'), size=(35, 10),default_value='GreedyPlayer', key="player1", enable_events=True)],
+            [sg.InputCombo(('Human Player', 'RandomPlayer', 'GreedyPlayer', 'GreedyForker', 'ExploreExploitPlayer', 'APlayer', 'DirectionsPlayer'), size=(35, 10),default_value='GreedyPlayer', key="player1", enable_events=True)],
             [sg.Input(key="gene1", visible = False)],
             [sg.Slider(range=(1, 100), orientation = 'h', size = (34,20), default_value = 10, resolution=1, key="gene1l", visible=False)],
             [sg.Text('Select Player 2', font=("Helvetica", 10))],    
-            [sg.InputCombo(('Human Player', 'RandomPlayer', 'GreedyPlayer', 'GreedyForker', 'ExploreExploitPlayer', 'APlayer', 'None'), size=(35, 10), default_value='GreedyPlayer', key="player2", enable_events=True)],
+            [sg.InputCombo(('Human Player', 'RandomPlayer', 'GreedyPlayer', 'GreedyForker', 'ExploreExploitPlayer', 'APlayer', 'DirectionsPlayer', 'None'), size=(35, 10), default_value='GreedyPlayer', key="player2", enable_events=True)],
             [sg.Input(key="gene2", visible = False)],
             [sg.Slider(range=(1, 100), orientation = 'h', size = (34,20), default_value = 10, resolution=1, key="gene2l", visible=False)],
             [sg.Text('Select starting energy (as a multiple of the cost to grow 1 block)', font=("Helvetica", 10))],
@@ -81,17 +81,17 @@ def _settings():
     
     window = sg.Window('Settings', layout)
     
+    #Event loop. Update menu as appropriate when settings are changed. Currently pretty jank
     while (True):
         event, values = window.read()
-        print(event)
         if event == 'Submit':
             print(values)
             players = []
-            if values['player1'] == "ExploreExploitPlayer" or values['player1'] == "APlayer":
+            if values['player1'] == "ExploreExploitPlayer" or values['player1'] == "APlayer" or values['player1']=="DirectionsPlayer":
                 players.append({"type":values["player1"], "genes":values["gene1"], "gene_length":int(values["gene1l"])})
             else:
                 players.append({"type":values["player1"]})
-            if values['player2'] == "ExploreExploitPlayer"  or values['player2'] == "APlayer":
+            if values['player2'] == "ExploreExploitPlayer"  or values['player2'] == "APlayer" or values['player2']=="DirectionsPlayer":
                 players.append({"type":values["player2"], "genes":values["gene2"], "gene_length":int(values["gene2l"])})
             else:
                 players.append({"type":values["player2"]})
@@ -115,13 +115,13 @@ def _settings():
             window['n1'].Update("Select nutrient clustering (higher->more clustering)")
             window['n2'].Update("Select nutrient clustering passes (more->larger clusters)")
 
-        if values['player1'] == "ExploreExploitPlayer" or values['player1'] == "APlayer":
+        if values['player1'] == "ExploreExploitPlayer" or values['player1'] == "APlayer" or values['player1']=="DirectionsPlayer":
             window['gene1'].Update(visible = True)
             window['gene1l'].Update(visible = True)
         else:
             window['gene1'].Update(visible = False)
             window['gene1l'].Update(visible = False)
-        if values['player2'] == "ExploreExploitPlayer" or values['player2'] == "APlayer":
+        if values['player2'] == "ExploreExploitPlayer" or values['player2'] == "APlayer" or values['player2']=="DirectionsPlayer":
             window['gene2'].Update(visible = True)
             window['gene2l'].Update(visible = True)
         else:

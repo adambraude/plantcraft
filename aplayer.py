@@ -8,6 +8,15 @@ class APlayer(Player):
         self.genestrand = settings["genes"]
         self.gene_length = settings["gene_length"]
         self.traits = []
+        #Needs a genestrand of length 80
+        #Trait 0: probability of restricting search to closest [Trait 4] nutrients
+        #Trait 1: probability of picking a random nutrient as the target
+        #Trait 2: Number of turns spent pursuing a target while following Trait 0 targeting. If turns run out, retarget.
+        #Trait 3: Number of turns spent pursuing a target while following Trait 1 targeting
+        #Trait 4: See Trait 1
+        #Trait 5: Reluctance to fork
+        #Trait 6: Higher value -> cares more about how far away nutrients are
+        #Trait 7: Higher value -> more interest in pursuing far away nutrients
         self.readGenes()
         self.target = None
         self.persistence = 0
@@ -62,11 +71,9 @@ class APlayer(Player):
     def _findTarget(self):
         self.target = None
         oldtarget = None
-        #self.origin = None
         shortestDist = 999999
         longestDist = 0
         closest = []
-        furthest = []
         olddist = 0
         oldorigin = None
         dists = []
