@@ -259,7 +259,7 @@ class Window(pyglet.window.Window):
             self.currentPlayer().rootSystem.add_block((x,y+self.stalks[self.currentPlayerIndex],z), settings.STALK_TEXTURE)
         elif self.currentPlayer().rootSystem.energy < self.stalks[self.currentPlayerIndex] * (settings.GOAL/11):
             x, y, z = self.currentPlayer().rootSystem.position
-            self.currentPlayer().rootSystem.world.remove_block((x,y+self.stalks[self.currentPlayerIndex],z))
+            self.currentPlayer().rootSystem.world.remove_block((x,y+self.stalks[self.currentPlayerIndex]+1,z))
             self.stalks[self.currentPlayerIndex] -= 1
 
     def drawFlower(self):
