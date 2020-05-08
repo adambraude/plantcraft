@@ -27,44 +27,45 @@ def _point_mutation(string1, string2):
     #print(string2)
     return string1, string2
     
-def _swap(section1, section2):
-    #print(section2)
-    return2 = section2[:int(len(section2)/2)] + section1[:int(len(section1)/2)]
-    #print(section2)
-    #print(section1)
-    return1 = section1[int(len(section1)/2):] + section2[int(len(section2)/2):]
-    #print(section1)
-    return return1, return2
+#def _swap(section1, section2):
+#    #print(section2)
+#    return2 = section2[:int(len(section2)/2)] + section1[:int(len(section1)/2)]
+#    #print(section2)
+#    #print(section1)
+#    return1 = section1[int(len(section1)/2):] + section2[int(len(section2)/2):]
+#    #print(section1)
+#    return return1, return2
     
 
-def _crossover(string1, string2, gene_length):
-    for i in range(int(len(string1)/gene_length)):
+def _crossover(string1, string2):
+    #for i in range(int(len(string1)/gene_length)):
         # from i*genelength to another genelength away of the string
-        
-        place = i*gene_length
-        start = 0
-        swap_1, swap_2 = _swap(string1[place:(place+gene_length)], string2[place:(place+gene_length)])
+    tot_len = len(string1)
+    cross_place = random.randint(0, tot_len-1)
+    end_place = random.randint(cross_place, tot_len)
+    start = 0
+    #swap_1, swap_2 = _swap(string1[cross_place:end_place], string2[cross_place:end_place])
         #print(place)
         #print(swap_1)
         #print(string1)
-        string1 = string1[start:place]+swap_1+string1[(place+gene_length):]
+    ret_string1 = string1[start:cross_place]+string2[cross_place:end_place]+string1[end_place:tot_len]
         #print(place)
         #print(string1)
-        string2 = string2[start:place]+swap_2+string2[(place+gene_length):]
+    ret_string2 = string2[start:cross_place]+string1[cross_place:end_place]+string2[end_place:tot_len]
     #print(string1)
     #print(string2)
-    return string1, string2
+    return ret_string1, ret_string2
     
 
-def _make_babies(string1, string2, gene_length):
-    child1, child2 = _crossover(string1, string2, gene_length)
-    child1, child2 = _point_mutation(child1, child2)
-    #print(child1)
-    #print(child2)
+def _make_babies(string1, string2):
+    child1, child2 = _crossover(string1, string2)
+    #child1, child2 = _point_mutation(child1, child2)
+    print(child1)
+    print(child2)
     return child1, child2
  
     
-_make_babies("0000000000000000", "1111111111111111", 4)
+_make_babies("0000000000000000", "1111111111111111")
 # _crossover("0101010101010101", "1010101010101010", 4)
 #_point_mutation("0000000000000000000000", "1111111111111111111111")
 
