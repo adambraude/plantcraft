@@ -147,11 +147,11 @@ class ExploreExploitPlayer(Player):
         # read gene strand for this particular player and determine probabilities
     def determineLikelihood(self):
         # runs the probabilities based on allele counts in genes
-        probExplore = self.traits[0]
+        probExploit = self.traits[0]
         self.length_stay = self.traits[1]
         #probExploit = random.randint(0, self.traits[1])
         
-        if random.randint(0,self.gene_length) <= probExplore:
+        if random.randint(0,self.gene_length) <= probExploit:
             return 0
         else:
             return 1
@@ -295,15 +295,13 @@ class ExploreExploitPlayer(Player):
 class DirectionsPlayer(Player):
     def __init__(self, rootSystem, window, settings):
         super().__init__(rootSystem, window, settings)
-        print(settings)
-        #self.rootSystem.tipTex=TEXTURES[3]
         self.genestrand = settings["genes"]
         self.gene_length = settings["gene_length"]
         self.traits = [0,0,0,0,0,0]
+        self.rand_traits = [0,0,0,0,0,0]
         self.readGenes()
-        #self.probabilities = []
         self.prob_order = []
-        #self.legal_moves
+        
     
     # read gene strand
     def readGenes(self):
@@ -322,8 +320,9 @@ class DirectionsPlayer(Player):
         
         # read gene strand for this particular player and determine probabilities
     def determineLikelihood(self):
-        
-        self.prob_order = np.argsort(self.traits) #use probabilities back to front and loop through 
+        for i in range(len(self.traits)):
+            self.rand_traits[i] = random.randint(0, self.traits[i])
+        self.prob_order = np.argsort(self.rand_traits) #use probabilities back to front and loop through 
         #print(self.prob_order)
         return self.prob_order
         

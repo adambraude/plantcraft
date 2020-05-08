@@ -60,8 +60,8 @@ def _crossover(string1, string2):
 def _make_babies(string1, string2):
     child1, child2 = _crossover(string1, string2)
     #child1, child2 = _point_mutation(child1, child2)
-    print(child1)
-    print(child2)
+    #print(child1)
+    #print(child2)
     return child1, child2
  
     

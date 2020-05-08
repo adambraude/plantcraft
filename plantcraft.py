@@ -659,11 +659,11 @@ def main():
         settings.GFX = False
         window = Window(width=0, height=0, caption='PlantCraft', resizable=False)
         numPlayers = 10
-        numGenerations = 10
+        numGenerations = 50
         currentGeneration = []
         for i in range(numPlayers):
             genome = ""
-            for j in range(10):
+            for j in range(20):
                 if (random.random() > 0.5):
                     genome += "1"
                 else:
@@ -717,7 +717,7 @@ def main():
             while len(nextGeneration) < numPlayers:
                 parent1 = random.choices(currentGeneration, weights=fitness, k=1)[0]
                 parent2 = random.choices(currentGeneration, weights=fitness, k=1)[0]
-                kids = crossover._make_babies(parent1["genes"], parent2["genes"], 10)
+                kids = crossover._make_babies(parent1["genes"], parent2["genes"])
                 nextGeneration.append({"type":"ExploreExploitPlayer", "genes":kids[0], "gene_length":10})
                 nextGeneration.append({"type":"ExploreExploitPlayer", "genes":kids[1], "gene_length":10})
             end = time.time()
