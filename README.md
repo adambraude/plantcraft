@@ -1,6 +1,8 @@
 # PlantCraft
 PlantCraft is a game that simulates the root growth of plants! Each plant tries to collect nutrient blocks with its root tips more efficiently than the plant. Roots can only grow from the tip, but can otherwise grow in any direction. When a plant grows its root, it may choose to make a new root tip instead of moving the existing root tip. This is called "forking" and costs additional energy. The first plant to reach the energy goal wins. If a plant runs out of energy entirely, it automatically loses.
 
+It's built on a Python Minecraft Engine that you can find here: https://github.com/fogleman/Minecraft
+
 # Usage
 
 On the command line, run 
